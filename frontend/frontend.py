@@ -9,26 +9,29 @@ st.markdown("""# Pro-Test
 Please enter your expected or live protest conditions below to allow the model to predict the expectation of outcomes"""
             )
 
-Amal = int(st.checkbox('Amal is present'))
-Hezbollah = int(st.checkbox('Hezbollah is present'))
-Progressive_Socialist_Movement = int(
-    st.checkbox('Progressive Socialist Movement is present'))
+Country = str(st.selectbox('Country', ('Egypt', 'Iraq', 'Lebanon')))
+Governorate = str(st.selectbox('Governorate', ('''put list here''')))
+Location_Type = str(st.selectbox('Location Type', ('''put list here''')))
+Demand_Type = str(
+    st.selectbox('Type of Demand from Protester', ('''put list here''')))
+Tactic_Primary = str(
+    st.selectbox('Primary Protest Tactic', ('''put list here''')))
+Violence_Protesters = str(
+    st.selectbox('Level of Violence of Protesters', ('''put list here''')))
 Number_of_Participants = st.number_input('Number of Participants',
                                          value=1,
                                          step=1,
                                          min_value=1)
 
-# Amal = 1
-# Hezbollah = 1
-# Progressive_Socialist_Movement = 1
-# Number_of_Participants = 500000
-
 url = 'https://pro-test-v6c2rihg2a-ew.a.run.app/predict'
 
-parameters = dict(Amal_present=Amal,
-                  Hezbollah_present=Hezbollah,
-                  ProgressiveSocialistMovement=Progressive_Socialist_Movement,
-                  number_of_participants=Number_of_Participants)
+parameters = dict(Input_Country=Country,
+                  Input_Governorate=Governorate,
+                  Input_Location_Type=Location_Type,
+                  Input_Demand_Type=Demand_Type,
+                  Input_Tactic_Primary=Tactic_Primary,
+                  Input_Violence_Protesters=Violence_Protesters,
+                  Input_Number_of_Participants=Number_of_Participants)
 
 response = requests.get(url, params=parameters).json()
 
