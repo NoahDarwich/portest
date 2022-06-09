@@ -46,11 +46,11 @@ def predict(country, governorate, location_type, demand_type, protest_tactic,
     prediction = model.predict_proba(processed_prediction_input)
 
     return {
-        'model0': f'{prediction[0]}',
-        'model1': prediction[1],
-        'model2': prediction[2],
-        'model3': prediction[3],
-        'model4': prediction[4],
-        'model5': prediction[5],
-        'model6': prediction[6],
+        'predict0': f'{prediction[0]}',
+        'predict1': prediction[1],
+        'predict2': prediction[2],
+        'predict3': prediction[3],
+        'predict4': prediction[4],
+        'predict5': prediction[5],
+        'predict6': prediction[6],
     }
