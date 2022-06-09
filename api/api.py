@@ -1,3 +1,4 @@
+import pandas as pd
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import joblib
@@ -20,32 +21,36 @@ def index():
 
 
 @app.get("/predict")
-def predict(Amal_present, Hezbollah_present, ProgressiveSocialistMovement,
-            number_of_participants):
+def predict(country, governorate, location_type, demand_type, protest_tactic,
+            protestor_violence, combined_sizes):
 
     # Formatting the input of the variables to the model
-    Amal = int(Amal_present)
-    Hezbollah = int(Hezbollah_present)
-    ProgressiveSocialistMovement_bool = int(ProgressiveSocialistMovement)
-    size_of_event = float(number_of_participants)
+    prediction_input = pd.DataFrame({
+        'country': [str(country)],
+        'governorate': [str(governorate)],
+        'locationtypeend': [str(location_type)],
+        'demandtypeone': [str(demand_type)],
+        'tacticprimary': [str(protest_tactic)],
+        'violence': [str(protestor_violence)],
+        'combined_sizes': [int(combined_sizes)]
+    })
 
-    prediction_string = [[
-        Amal, Hezbollah, ProgressiveSocialistMovement_bool, size_of_event
-    ]]
+    load_path_model = "final_RF_model"
+    load_path_pre_processor = "pipeline"
 
-    # Define target values
-    targets = [
-        'Army_present_at_event', 'Arrests__detentions', 'Deaths_inflicted',
-        'Injuries_inflicted', 'No_known_coercion_no_security_presence',
-        'Party_Militias_Baltagia_present_at_event', 'Physical_harassment',
-        'Security_forces_present_at_event'
-    ]
+    model = joblib.load(load_path_model)
+    pre_processor = joblib.load(load_path_pre_processor)
 
-    model_dict = {}
+    processed_prediction_input = pre_processor.transform(prediction_input)
 
-    for i in targets:
-        load_path = 'model_logistic_regression_' + i
-        model_dict[i] = str(
-            joblib.load(load_path).predict(prediction_string)[0])
+    prediction = model.predict_proba(processed_prediction_input)
 
-    return model_dict
+    return {
+        'predict0': f'{prediction[0]}',
+        'predict1': prediction[1],
+        'predict2': prediction[2],
+        'predict3': prediction[3],
+        'predict4': prediction[4],
+        'predict5': prediction[5],
+        'predict6': prediction[6],
+    }
