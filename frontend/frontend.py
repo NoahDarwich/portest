@@ -74,8 +74,6 @@ rep_lst = [no_nown_coercion,arrests_and_detentions_probability,physical_harassme
 
 methods_lst = {'teargas':teargas_probability,'rubber_bullets':rubber_bullets_probability,
                'live_ammo':live_ammo_probability,
-                'injuries_inflicted':injuries_inflicted_probability,
-                'deaths_inflicted':deaths_inflicted_probability,
                 'sticks':sticks_probability,
                 'protest_surrounded':protest_surrounded_probability,
                 'area_cleared':area_cleared_probability}
