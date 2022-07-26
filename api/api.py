@@ -2,6 +2,7 @@ import pandas as pd
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import joblib
+# import uvicorn
 
 app = FastAPI()
 
@@ -54,3 +55,6 @@ def predict(country, governorate, location_type, demand_type, protest_tactic,
         'predict5': prediction[5],
         'predict6': prediction[6],
     }
+
+# if __name__ == '__main__':
+#     uvicorn.run(app)

@@ -10,7 +10,7 @@ st.markdown("""# Pro-Test
 Please enter your expected or live protest conditions below to allow the model to predict the expectation of outcomes"""
             )
 
-file_path = '../protest/data/full_df.csv'
+file_path = '../pro-test/data/full_df.csv'
 df = pd.read_csv(file_path, index_col=0)
 
 country_lst = df['country'].drop_duplicates()
@@ -34,7 +34,8 @@ with st.sidebar:
                                             step=1,
                                             min_value=3)
 
-url = 'https://pro-test-v02-v6c2rihg2a-ew.a.run.app/predict'
+# url = 'https://pro-test-v02-v6c2rihg2a-ew.a.run.app/predict'
+url = 'http://127.0.0.1:8000/predict'
 
 parameters = dict(country=Country,
                   governorate=Governorate,
