@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 import plotly.express as px
 
+
 st.markdown("""# Pro-Test
 ## Predictive Modelling for a Safer Forum of Dissent
 Please enter your expected or live protest conditions below to allow the model to predict the expectation of outcomes"""
