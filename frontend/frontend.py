@@ -36,7 +36,6 @@ with st.sidebar:
                                             min_value=3)
 
 url = 'https://pro-test-v02-v6c2rihg2a-ew.a.run.app/predict'
-# url = 'http://127.0.0.1:8000/predict'
 
 parameters = dict(country=Country,
                   governorate=Governorate,
