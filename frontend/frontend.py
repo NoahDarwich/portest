@@ -11,7 +11,7 @@ st.markdown("""# Pro-Test
 Please enter your expected or live protest conditions below to allow the model to predict the expectation of outcomes"""
             )
 
-file_path = 'data/full_df.csv'
+file_path = './frontend/data/full_df.csv'
 df = pd.read_csv(file_path, index_col=0)
 
 country_lst = df['country'].drop_duplicates()
