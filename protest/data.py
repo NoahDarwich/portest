@@ -6,6 +6,7 @@ leb_dataset_path = 'data/Leb_1_drop_non_impact_params.csv'
 iraq_dataset_path = 'data/iraq_1_drop_non_impact_params.csv'
 egypt_dataset_path = 'data/egypt_1_drop_non_impact_params.csv'
 
+
 def get_data():
     '''returns 3 DataFrames (leb - iraq - eygpt)'''
     '''added new column with the country name'''
