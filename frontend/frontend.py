@@ -5,6 +5,8 @@ import numpy as np
 import pandas as pd
 import plotly.express as px
 
+import joblib
+
 
 st.markdown("""# Pro-Test
 ## Predictive Modelling for a Safer Forum of Dissent
@@ -35,15 +37,10 @@ with st.sidebar:
                                             step=1,
                                             min_value=3)
 
-url = 'https://pro-test-v02-v6c2rihg2a-ew.a.run.app/predict'
+# url = 'https://pro-test-v02-v6c2rihg2a-ew.a.run.app/predict'
 
-parameters = dict(country=Country,
-                  governorate=Governorate,
-                  location_type=Location_Type,
-                  demand_type=Demand_Type,
-                  protest_tactic=Tactic_Primary,
-                  protestor_violence=Violence_Protesters,
-                  combined_sizes=Number_of_Participants)
+parameters = [Country, Governorate,Location_Type,
+              Demand_Type, Tactic_Primary, Violence_Protesters,Number_of_Participants]
 
 response = requests.get(url, params=parameters).json()
 
