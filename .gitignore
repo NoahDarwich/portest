@@ -1,7 +1,159 @@
-*.egg-info
-.coverage
-.ipynb_checkpoints
-.DS_Store
-raw_data/
-**/__pycache__/
+# Pro-Test .gitignore
+
+# ============================================================
+# Python
+# ============================================================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# ============================================================
+# Virtual Environments
+# ============================================================
 .env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# ============================================================
+# IDE / Editor
+# ============================================================
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.project
+.pydevproject
+.settings/
+*.sublime-project
+*.sublime-workspace
+
+# ============================================================
+# Testing / Coverage
+# ============================================================
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+
+# ============================================================
+# Jupyter Notebooks
+# ============================================================
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# ============================================================
+# mypy
+# ============================================================
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# ============================================================
+# Ruff
+# ============================================================
+.ruff_cache/
+
+# ============================================================
+# OS Files
+# ============================================================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# ============================================================
+# Data Files (may contain sensitive data)
+# ============================================================
+raw_data/
+*.csv.gz
+*.parquet
+
+# Keep data directory but ignore large files
+# data/*.csv is tracked, but raw exports aren't
+data/exports/
+
+# ============================================================
+# Model Artifacts (large binary files)
+# ============================================================
+# Note: Model files in api/ are tracked for now
+# In future, use DVC for large file versioning
+*.pkl
+*.pickle
+# api/final_RF_model  # Currently tracked
+# api/pipeline        # Currently tracked
+
+# ============================================================
+# Logs
+# ============================================================
+*.log
+logs/
+
+# ============================================================
+# Local Configuration
+# ============================================================
+.env
+.env.local
+.env.*.local
+*.local.py
+local_settings.py
+
+# ============================================================
+# Docker
+# ============================================================
+.docker/
+
+# ============================================================
+# DVC (Data Version Control)
+# ============================================================
+# Uncomment when DVC is set up
+# /data/*.csv.dvc
+# .dvc/tmp
+# .dvc/cache
+
+# ============================================================
+# MLflow
+# ============================================================
+mlruns/
+mlartifacts/
+
+# ============================================================
+# Secrets (NEVER commit these)
+# ============================================================
+*.pem
+*.key
+credentials.json
+secrets.json
+service-account*.json
