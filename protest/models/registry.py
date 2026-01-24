@@ -8,14 +8,14 @@ Integrates with MLflow when available.
 import json
 import logging
 import os
-from dataclasses import asdict, dataclass, field
+from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-import joblib
+import pandas as pd
 
-from protest.models.base import BaseModel, ModelMetadata, ModelType
+from protest.models.base import BaseModel, ModelType
 
 logger = logging.getLogger(__name__)
 
@@ -97,10 +97,7 @@ class ModelRegistry:
 
     def _save_registry(self) -> None:
         """Save registry to disk."""
-        data = {
-            name: [v.to_dict() for v in versions]
-            for name, versions in self._registry.items()
-        }
+        data = {name: [v.to_dict() for v in versions] for name, versions in self._registry.items()}
         with open(self._registry_file, "w") as f:
             json.dump(data, f, indent=2)
 
@@ -271,9 +268,7 @@ class ModelRegistry:
             raise ValueError(f"Model '{name}' not found")
 
         if version:
-            self._registry[name] = [
-                v for v in self._registry[name] if v.version != version
-            ]
+            self._registry[name] = [v for v in self._registry[name] if v.version != version]
             logger.info(f"Deleted '{name}' version {version}")
         else:
             del self._registry[name]
@@ -295,7 +290,6 @@ class ModelRegistry:
         Returns:
             DataFrame with version comparison.
         """
-        import pandas as pd
 
         model_versions = self._registry.get(name, [])
         if versions:
@@ -348,8 +342,8 @@ class MLflowRegistry(ModelRegistry):
     def log_training_run(
         self,
         model: BaseModel,
-        X_train: pd.DataFrame,
-        y_train: pd.DataFrame,
+        _X_train: pd.DataFrame,
+        _y_train: pd.DataFrame,
         metrics: dict[str, float],
         params: dict[str, Any] | None = None,
         tags: dict[str, str] | None = None,
@@ -367,7 +361,6 @@ class MLflowRegistry(ModelRegistry):
         Returns:
             MLflow run ID.
         """
-        import pandas as pd
 
         with self._mlflow.start_run() as run:
             # Log parameters
@@ -449,4 +442,3 @@ class MLflowRegistry(ModelRegistry):
 
 
 # Import pandas at module level for type hints
-import pandas as pd

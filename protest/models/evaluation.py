@@ -20,7 +20,7 @@ from sklearn.metrics import (
     recall_score,
     roc_auc_score,
 )
-from sklearn.model_selection import StratifiedKFold, cross_val_predict
+from sklearn.model_selection import StratifiedKFold
 
 from protest.models.base import BaseModel, ModelConfig, ModelType
 from protest.models.trainers import get_trainer
@@ -278,9 +278,7 @@ def compare_models(
             precision=np.mean([m.precision for m in cv_results.values()]),
             recall=np.mean([m.recall for m in cv_results.values()]),
             f1=np.mean([m.f1 for m in cv_results.values()]),
-            roc_auc=np.mean(
-                [m.roc_auc for m in cv_results.values() if m.roc_auc is not None]
-            )
+            roc_auc=np.mean([m.roc_auc for m in cv_results.values() if m.roc_auc is not None])
             if any(m.roc_auc is not None for m in cv_results.values())
             else None,
         )

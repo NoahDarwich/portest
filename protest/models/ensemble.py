@@ -105,7 +105,9 @@ class EnsembleModel(BaseModel):
 
         # Train each model
         for i, model_type in enumerate(self.ensemble_config.model_types):
-            logger.info(f"Training {model_type.value} ({i + 1}/{len(self.ensemble_config.model_types)})...")
+            logger.info(
+                f"Training {model_type.value} ({i + 1}/{len(self.ensemble_config.model_types)})..."
+            )
 
             # Create config for this model
             model_config = ModelConfig(
@@ -172,6 +174,7 @@ class EnsembleModel(BaseModel):
             # Stack and take mode
             stacked = np.stack(all_predictions, axis=0)
             from scipy import stats
+
             predictions, _ = stats.mode(stacked, axis=0, keepdims=False)
             return predictions
 
@@ -189,7 +192,7 @@ class EnsembleModel(BaseModel):
 
         # Collect probabilities from all models
         all_probas: list[list[NDArray[np.float64]]] = []
-        for model_type, model in self.models.items():
+        for _model_type, model in self.models.items():
             model_probas = model.predict_proba(X)
             all_probas.append(model_probas)
 
@@ -258,7 +261,7 @@ class EnsembleModel(BaseModel):
 
         all_importances: dict[str, list[float]] = {}
 
-        for model_type, model in self.models.items():
+        for _model_type, model in self.models.items():
             importance = model.get_feature_importance()
             for feature, value in importance.items():
                 if feature not in all_importances:
@@ -266,10 +269,7 @@ class EnsembleModel(BaseModel):
                 all_importances[feature].append(value)
 
         # Average importances
-        averaged = {
-            feature: np.mean(values)
-            for feature, values in all_importances.items()
-        }
+        averaged = {feature: np.mean(values) for feature, values in all_importances.items()}
 
         # Sort by importance
         return dict(sorted(averaged.items(), key=lambda x: x[1], reverse=True))
@@ -287,8 +287,9 @@ class EnsembleModel(BaseModel):
 
     def save(self, path: str) -> None:
         """Save ensemble model to disk."""
-        import joblib
         from pathlib import Path
+
+        import joblib
 
         path = Path(path)
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -306,8 +307,9 @@ class EnsembleModel(BaseModel):
     @classmethod
     def load(cls, path: str) -> "EnsembleModel":
         """Load ensemble model from disk."""
-        import joblib
         from pathlib import Path
+
+        import joblib
 
         path = Path(path)
         if not path.exists():
@@ -319,9 +321,7 @@ class EnsembleModel(BaseModel):
             config=ensemble_data.get("config"),
             ensemble_config=ensemble_data.get("ensemble_config"),
         )
-        instance.models = {
-            ModelType(k): v for k, v in ensemble_data.get("models", {}).items()
-        }
+        instance.models = {ModelType(k): v for k, v in ensemble_data.get("models", {}).items()}
         instance.weights = ensemble_data.get("weights", [])
         instance.metadata = ensemble_data.get("metadata")
         instance._is_fitted = len(instance.models) > 0

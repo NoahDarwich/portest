@@ -73,11 +73,14 @@ def load_data(data_path: Path) -> tuple[pd.DataFrame, pd.DataFrame]:
     df = pd.read_csv(data_path)
 
     # Handle missing combined_sizes
-    if "combined_sizes" not in df.columns:
-        if "sizeestimate" in df.columns and "sizeexact" in df.columns:
-            df["sizeestimate"] = df["sizeestimate"].fillna(-99)
-            df["sizeexact"] = df["sizeexact"].fillna(0)
-            df["combined_sizes"] = df["sizeexact"] + df["sizeestimate"]
+    if (
+        "combined_sizes" not in df.columns
+        and "sizeestimate" in df.columns
+        and "sizeexact" in df.columns
+    ):
+        df["sizeestimate"] = df["sizeestimate"].fillna(-99)
+        df["sizeexact"] = df["sizeexact"].fillna(0)
+        df["combined_sizes"] = df["sizeexact"] + df["sizeestimate"]
 
     # Replace unknown sizes with median
     if "combined_sizes" in df.columns:
@@ -96,7 +99,9 @@ def load_data(data_path: Path) -> tuple[pd.DataFrame, pd.DataFrame]:
     for col in y.columns:
         y[col] = (y[col] > 0).astype(int)
 
-    logger.info(f"Loaded {len(df)} samples with {len(available_features)} features and {len(available_targets)} targets")
+    logger.info(
+        f"Loaded {len(df)} samples with {len(available_features)} features and {len(available_targets)} targets"
+    )
     return X, y
 
 
@@ -115,7 +120,8 @@ def compare_all_models(
     logger.info("Comparing models...")
 
     results = compare_models(
-        X, y,
+        X,
+        y,
         model_types=[ModelType.RANDOM_FOREST, ModelType.XGBOOST, ModelType.LIGHTGBM],
         n_folds=n_folds,
     )

@@ -2,10 +2,6 @@
 Tests for the configuration module.
 """
 
-import os
-
-import pytest
-
 
 class TestSettings:
     """Tests for Settings class."""

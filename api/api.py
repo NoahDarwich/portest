@@ -53,7 +53,9 @@ class PredictionResult(BaseModel):
     """Individual prediction result with confidence."""
 
     probability: float = Field(..., ge=0, le=1, description="Probability of outcome occurring")
-    confidence: float | None = Field(None, ge=0, le=1, description="Confidence in prediction (std dev)")
+    confidence: float | None = Field(
+        None, ge=0, le=1, description="Confidence in prediction (std dev)"
+    )
 
     class Config:
         json_schema_extra = {"example": {"probability": 0.75, "confidence": 0.85}}
@@ -173,7 +175,7 @@ model_manager = ModelManager()
 # Application Lifespan
 # ============================================================
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(_app: FastAPI):
     """Application lifespan handler for startup/shutdown."""
     settings = get_settings()
 
@@ -409,10 +411,11 @@ async def get_feature_importance() -> FeatureImportanceResponse:
         if hasattr(model_manager.model, "feature_importances_"):
             importances = model_manager.model.feature_importances_
             feature_names = model_manager.pipeline.get_feature_names_out()
-            feature_importance = dict(zip(feature_names, importances.tolist()))
+            feature_importance = dict(zip(feature_names, importances.tolist(), strict=False))
         elif hasattr(model_manager.model, "estimators_"):
             # MultiOutputClassifier - average across estimators
             import numpy as np
+
             all_importances = []
             for estimator in model_manager.model.estimators_:
                 if hasattr(estimator, "feature_importances_"):
@@ -420,7 +423,9 @@ async def get_feature_importance() -> FeatureImportanceResponse:
             if all_importances:
                 avg_importances = np.mean(all_importances, axis=0)
                 feature_names = model_manager.pipeline.get_feature_names_out()
-                feature_importance = dict(zip(feature_names, avg_importances.tolist()))
+                feature_importance = dict(
+                    zip(feature_names, avg_importances.tolist(), strict=False)
+                )
             else:
                 feature_importance = {}
         else:

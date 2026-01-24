@@ -71,7 +71,7 @@ class Settings(BaseSettings):
 
     @field_validator("cache_enabled", mode="before")
     @classmethod
-    def auto_enable_cache(cls, v: bool, info) -> bool:
+    def auto_enable_cache(cls, v: bool, _info) -> bool:
         """Auto-enable cache if Redis URL is provided."""
         # This will be called during validation
         return v

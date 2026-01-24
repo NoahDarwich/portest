@@ -3,8 +3,8 @@ Pytest configuration and fixtures for Pro-Test tests.
 """
 
 import os
+from collections.abc import Generator
 from pathlib import Path
-from typing import Generator
 
 import pytest
 from fastapi.testclient import TestClient

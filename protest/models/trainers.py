@@ -8,7 +8,6 @@ multi-output classification support.
 import logging
 import uuid
 from datetime import datetime
-from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -180,7 +179,7 @@ class RandomForestTrainer(BaseModel):
             else:
                 importances = self.model.feature_importances_
 
-            return dict(zip(feature_names, importances.tolist()))
+            return dict(zip(feature_names, importances.tolist(), strict=False))
         except Exception as e:
             logger.warning(f"Could not get feature importance: {e}")
             return {}
@@ -294,7 +293,7 @@ class XGBoostTrainer(BaseModel):
             else:
                 importances = self.model.feature_importances_
 
-            return dict(zip(feature_names, importances.tolist()))
+            return dict(zip(feature_names, importances.tolist(), strict=False))
         except Exception as e:
             logger.warning(f"Could not get feature importance: {e}")
             return {}
@@ -407,7 +406,7 @@ class LightGBMTrainer(BaseModel):
             else:
                 importances = self.model.feature_importances_
 
-            return dict(zip(feature_names, importances.tolist()))
+            return dict(zip(feature_names, importances.tolist(), strict=False))
         except Exception as e:
             logger.warning(f"Could not get feature importance: {e}")
             return {}
