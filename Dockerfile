@@ -22,8 +22,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # ============================================================
 FROM base AS dependencies
 
-# Install Python dependencies
+# Copy source files needed for pip install
 COPY pyproject.toml ./
+COPY protest/ ./protest/
+COPY api/ ./api/
+
+# Install Python dependencies
 RUN pip install --upgrade pip && \
     pip install .
 
