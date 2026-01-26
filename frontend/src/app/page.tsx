@@ -6,7 +6,8 @@ import { PredictionResults } from "@/components/prediction-results";
 import { FeatureImportance } from "@/components/feature-importance";
 import { ModelInfo } from "@/components/model-info";
 import { api, PredictionInput, PredictionResponse, HealthResponse } from "@/lib/api";
-import { AlertTriangle, CheckCircle, Shield, Zap, Brain } from "lucide-react";
+import { AlertTriangle, CheckCircle, Shield, Zap, Brain, Book } from "lucide-react";
+import Link from "next/link";
 import { cn } from "@/lib/utils";
 
 function HealthBadge({ health, error }: { health: HealthResponse | null; error: boolean }) {
@@ -113,7 +114,16 @@ export default function Home() {
                 <p className="text-xs text-gray-500">Protest Outcome Prediction</p>
               </div>
             </div>
-            <HealthBadge health={health} error={healthError} />
+            <div className="flex items-center gap-4">
+              <Link
+                href="/docs"
+                className="flex items-center gap-1 text-sm text-gray-600 hover:text-gray-900"
+              >
+                <Book className="h-4 w-4" />
+                API Docs
+              </Link>
+              <HealthBadge health={health} error={healthError} />
+            </div>
           </div>
         </div>
       </header>

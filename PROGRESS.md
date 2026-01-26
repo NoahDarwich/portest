@@ -130,10 +130,12 @@ Trained and validated the ensemble model on 13,387 protest records.
 - ✅ Docker configuration for frontend container
 - ✅ Moved legacy Streamlit frontend to `frontend_streamlit/`
 
-**4.2 Documentation** (Future)
-- API documentation site
-- User guide
-- Model methodology documentation
+**4.2 Documentation** ✅ (Complete)
+- ✅ API documentation page (`/docs`) with endpoint reference
+- ✅ Parameter documentation for all endpoints
+- ✅ Response examples
+- ✅ Model limitations section
+- Link to OpenAPI/Swagger docs
 
 **4.3 Onboarding** (Future)
 - Quick start tutorial
@@ -190,7 +192,9 @@ portest/
 │   │   ├── app/
 │   │   │   ├── layout.tsx
 │   │   │   ├── page.tsx    # Main dashboard
-│   │   │   └── globals.css
+│   │   │   ├── globals.css
+│   │   │   └── docs/
+│   │   │       └── page.tsx  # API documentation
 │   │   ├── components/
 │   │   │   ├── ui/         # Reusable UI components
 │   │   │   │   ├── button.tsx
