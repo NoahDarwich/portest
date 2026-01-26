@@ -38,8 +38,21 @@ services:
       timeout: 5s
       retries: 3
 
-  # Frontend (Streamlit) - optional for development
+  # Frontend (Next.js)
   frontend:
+    build:
+      context: ./frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://api:8000
+    depends_on:
+      - api
+    profiles:
+      - frontend
+
+  # Legacy Frontend (Streamlit) - optional
+  frontend-streamlit:
     build:
       context: .
       target: production
@@ -49,13 +62,13 @@ services:
       - API_URL=http://api:8000
       - STREAMLIT_SERVER_PORT=8501
       - STREAMLIT_SERVER_ADDRESS=0.0.0.0
-    command: streamlit run frontend/frontend.py --server.port 8501 --server.address 0.0.0.0
+    command: streamlit run frontend_streamlit/frontend.py --server.port 8501 --server.address 0.0.0.0
     volumes:
-      - ./frontend:/app/frontend:ro
+      - ./frontend_streamlit:/app/frontend_streamlit:ro
     depends_on:
       - api
     profiles:
-      - frontend
+      - streamlit
 
 volumes:
   redis_data:

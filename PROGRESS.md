@@ -1,6 +1,6 @@
 # Pro-Test v2.0 Development Progress
 
-## Current Status: Phase 3 Complete
+## Current Status: Phase 4.1 Complete
 
 **Last Updated:** January 26, 2026
 
@@ -113,12 +113,36 @@ Trained and validated the ensemble model on 13,387 protest records.
 - Staging environment
 - Blue-green deployments
 
+### ✅ Phase 4: User Experience (In Progress)
+**Goal:** Modern, intuitive interface with clear documentation
+
+**4.1 Frontend Rebuild** ✅ (Complete)
+- ✅ Created Next.js 16 project with TypeScript and Tailwind CSS
+- ✅ Built reusable UI components (Button, Card, Select, Input, Label)
+- ✅ TypeScript API client (`frontend/src/lib/api.ts`)
+- ✅ PredictionForm component with dynamic options loading
+- ✅ PredictionResults component with visual outcome display
+- ✅ Main dashboard page with health status indicator
+- ✅ Responsive two-column layout (form + results)
+- ✅ Docker configuration for frontend container
+- ✅ Moved legacy Streamlit frontend to `frontend_streamlit/`
+
+**4.2 Documentation** (Future)
+- API documentation site
+- User guide
+- Model methodology documentation
+
+**4.3 Onboarding** (Future)
+- Quick start tutorial
+- Example use cases
+- FAQ
+
 ---
 
 ## Quick Start (Current State)
 
 ```bash
-# Install dependencies
+# Install backend dependencies
 pip install -e ".[dev]"
 
 # Set up pre-commit hooks
@@ -130,7 +154,13 @@ pytest tests/ -v
 # Start API (development)
 python -m api.api
 
-# Train models
+# Start frontend (development)
+cd frontend && npm install && npm run dev
+
+# Or use Docker Compose
+docker-compose --profile frontend up
+
+# Train models (if needed)
 python scripts/train_models.py --data data/full_df.csv --model-type ensemble
 ```
 
@@ -141,27 +171,51 @@ python scripts/train_models.py --data data/full_df.csv --model-type ensemble
 ```
 portest/
 ├── api/
-│   └── api.py              # FastAPI application (updated)
+│   └── api.py              # FastAPI application
 ├── protest/
 │   ├── config.py           # Settings module
-│   ├── logging.py          # Structured logging (new)
-│   ├── metrics.py          # Prometheus metrics (new)
+│   ├── logging.py          # Structured logging
+│   ├── metrics.py          # Prometheus metrics
 │   └── models/             # ML module
 │       ├── base.py
 │       ├── trainers.py
 │       ├── ensemble.py
 │       ├── evaluation.py
 │       └── registry.py
+├── frontend/               # Next.js frontend (new)
+│   ├── src/
+│   │   ├── app/
+│   │   │   ├── layout.tsx
+│   │   │   ├── page.tsx    # Main dashboard
+│   │   │   └── globals.css
+│   │   ├── components/
+│   │   │   ├── ui/         # Reusable UI components
+│   │   │   │   ├── button.tsx
+│   │   │   │   ├── card.tsx
+│   │   │   │   ├── input.tsx
+│   │   │   │   ├── label.tsx
+│   │   │   │   └── select.tsx
+│   │   │   ├── prediction-form.tsx
+│   │   │   └── prediction-results.tsx
+│   │   └── lib/
+│   │       ├── api.ts      # TypeScript API client
+│   │       └── utils.ts
+│   ├── Dockerfile
+│   ├── package.json
+│   ├── next.config.ts
+│   └── tailwind.config.ts
+├── frontend_streamlit/     # Legacy Streamlit frontend
+│   └── frontend.py
 ├── tests/
 │   ├── conftest.py         # Pytest fixtures
 │   ├── test_api.py         # API tests (35 tests)
 │   ├── test_config.py      # Config tests
 │   ├── test_data.py        # Data tests
-│   ├── test_integration.py # Integration tests (new)
+│   ├── test_integration.py # Integration tests
 │   ├── test_logging.py     # Logging tests
 │   ├── test_metrics.py     # Metrics tests
-│   └── test_models.py      # Model tests (new)
-├── monitoring/             # Monitoring stack (new)
+│   └── test_models.py      # Model tests
+├── monitoring/             # Monitoring stack
 │   ├── docker-compose.yml  # Prometheus + Grafana
 │   ├── prometheus/
 │   │   ├── prometheus.yml
@@ -197,10 +251,16 @@ portest/
 ## To Continue Development
 
 1. Review `CONSTITUTION.md` for full roadmap
-2. Phase 3.4 (Deployment Automation) is optional for future work
-3. Run tests: `pytest tests/ -v` (83 tests)
-4. Start monitoring: `cd monitoring && docker-compose up -d`
-5. API docs available at: http://localhost:8000/docs
+2. Run backend tests: `pytest tests/ -v` (83 tests)
+3. Start API: `python -m api.api` (runs on http://localhost:8000)
+4. Start frontend: `cd frontend && npm run dev` (runs on http://localhost:3000)
+5. Start monitoring: `cd monitoring && docker-compose up -d`
+6. API docs available at: http://localhost:8000/docs
+
+### Remaining Work
+- Phase 3.4: Deployment Automation (optional)
+- Phase 4.2: Documentation site
+- Phase 4.3: User onboarding
 
 ---
 
