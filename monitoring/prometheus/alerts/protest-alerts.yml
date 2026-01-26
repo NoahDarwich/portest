@@ -1,0 +1,92 @@
+# Pro-Test Alerting Rules
+groups:
+  - name: protest-api
+    rules:
+      # Model not loaded
+      - alert: ModelNotLoaded
+        expr: protest_model_loaded == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "ML Model is not loaded"
+          description: "The Pro-Test ML model has been unloaded or failed to load for more than 1 minute."
+
+      # High error rate
+      - alert: HighPredictionErrorRate
+        expr: |
+          sum(rate(protest_prediction_requests_total{status="error"}[5m]))
+          / sum(rate(protest_prediction_requests_total[5m])) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High prediction error rate"
+          description: "More than 5% of prediction requests are failing."
+
+      # High latency
+      - alert: HighPredictionLatency
+        expr: histogram_quantile(0.95, sum(rate(protest_prediction_latency_seconds_bucket[5m])) by (le)) > 1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High prediction latency"
+          description: "95th percentile prediction latency is above 1 second."
+
+      # Very high latency
+      - alert: CriticalPredictionLatency
+        expr: histogram_quantile(0.95, sum(rate(protest_prediction_latency_seconds_bucket[5m])) by (le)) > 5
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Critical prediction latency"
+          description: "95th percentile prediction latency is above 5 seconds."
+
+      # No predictions (service might be down)
+      - alert: NoPredictions
+        expr: sum(increase(protest_prediction_requests_total[10m])) == 0
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "No predictions in the last 10 minutes"
+          description: "The API hasn't processed any prediction requests in 10 minutes."
+
+      # Cache not working
+      - alert: LowCacheHitRate
+        expr: |
+          sum(protest_cache_hits_total) / (sum(protest_cache_hits_total) + sum(protest_cache_misses_total)) < 0.1
+        for: 15m
+        labels:
+          severity: info
+        annotations:
+          summary: "Low cache hit rate"
+          description: "Cache hit rate is below 10%, which may indicate cache issues or highly variable requests."
+
+  - name: protest-drift
+    rules:
+      # Unusual country distribution (potential data drift)
+      - alert: UnusualCountryDistribution
+        expr: |
+          (sum(increase(protest_input_country_total{country="Iraq"}[1h]))
+           / sum(increase(protest_input_country_total[1h]))) < 0.3
+        for: 1h
+        labels:
+          severity: info
+        annotations:
+          summary: "Unusual country distribution detected"
+          description: "Iraq predictions are less than 30% of total, which differs from training data distribution."
+
+      # High deadly force predictions (anomaly detection)
+      - alert: HighDeadlyForcePredictions
+        expr: |
+          sum(rate(protest_model_predictions_by_outcome_total{outcome="physical_deadly", predicted="true"}[1h]))
+          / sum(rate(protest_model_predictions_by_outcome_total{outcome="physical_deadly"}[1h])) > 0.3
+        for: 30m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Unusually high deadly force predictions"
+          description: "More than 30% of predictions are indicating deadly physical force, which may indicate unusual input patterns."

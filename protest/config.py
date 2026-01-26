@@ -52,11 +52,10 @@ class Settings(BaseSettings):
     # ============================================================
     # Model Settings
     # ============================================================
-    model_path: Path = Path("api/final_RF_model")
-    pipeline_path: Path = Path("api/pipeline")
+    model_path: Path = Path("models/ensemble_model.joblib")
     model_cache_enabled: bool = True
 
-    @field_validator("model_path", "pipeline_path", mode="before")
+    @field_validator("model_path", mode="before")
     @classmethod
     def validate_path(cls, v: str | Path) -> Path:
         """Convert string paths to Path objects."""

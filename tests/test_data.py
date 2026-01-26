@@ -64,38 +64,56 @@ class TestDataLoading:
 class TestModelFiles:
     """Tests for model file existence."""
 
-    def test_model_file_exists(self, api_dir: Path):
-        """Test that trained model file exists."""
-        model_path = api_dir / "final_RF_model"
-        assert model_path.exists(), f"Model file not found at {model_path}"
-
-    def test_pipeline_file_exists(self, api_dir: Path):
-        """Test that preprocessing pipeline file exists."""
-        pipeline_path = api_dir / "pipeline"
-        assert pipeline_path.exists(), f"Pipeline file not found at {pipeline_path}"
+    def test_ensemble_model_exists(self, project_root: Path):
+        """Test that trained ensemble model file exists."""
+        model_path = project_root / "models" / "ensemble_model.joblib"
+        assert model_path.exists(), f"Ensemble model not found at {model_path}"
 
     @pytest.mark.slow
-    def test_model_loadable(self, api_dir: Path):
-        """Test that model can be loaded with joblib."""
-        import joblib
+    def test_ensemble_model_loadable(self, project_root: Path):
+        """Test that ensemble model can be loaded."""
+        from protest.models.ensemble import EnsembleModel
 
-        model_path = api_dir / "final_RF_model"
+        model_path = project_root / "models" / "ensemble_model.joblib"
         if not model_path.exists():
-            pytest.skip("Model file not available")
+            pytest.skip("Ensemble model file not available")
 
-        model = joblib.load(model_path)
+        model = EnsembleModel.load(model_path)
         assert model is not None
+        assert hasattr(model, "predict"), "Model should have predict method"
         assert hasattr(model, "predict_proba"), "Model should have predict_proba method"
 
     @pytest.mark.slow
-    def test_pipeline_loadable(self, api_dir: Path):
-        """Test that pipeline can be loaded with joblib."""
-        import joblib
+    def test_ensemble_model_prediction(self, project_root: Path):
+        """Test that ensemble model can make predictions."""
+        import pandas as pd
 
-        pipeline_path = api_dir / "pipeline"
-        if not pipeline_path.exists():
-            pytest.skip("Pipeline file not available")
+        from protest.models.ensemble import EnsembleModel
 
-        pipeline = joblib.load(pipeline_path)
-        assert pipeline is not None
-        assert hasattr(pipeline, "transform"), "Pipeline should have transform method"
+        model_path = project_root / "models" / "ensemble_model.joblib"
+        if not model_path.exists():
+            pytest.skip("Ensemble model file not available")
+
+        model = EnsembleModel.load(model_path)
+
+        # Create test input
+        test_data = pd.DataFrame(
+            [
+                {
+                    "country": "Iraq",
+                    "governorate": "Baghdad",
+                    "locationtypeend": "Midan",
+                    "demandtypeone": "Politics (national)",
+                    "tacticprimary": "Demonstration / protest",
+                    "violence": "Peaceful",
+                    "combined_sizes": 100,
+                }
+            ]
+        )
+
+        # Test predictions
+        probs = model.predict_proba(test_data)
+        preds = model.predict(test_data)
+
+        assert len(probs) == 7, "Should have 7 target predictions"
+        assert preds.shape[1] == 7, "Should have 7 target columns"

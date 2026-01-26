@@ -4,25 +4,139 @@ Pro-Test API
 FastAPI application for protest outcome predictions.
 """
 
-import logging
+import hashlib
+import json
+import time
+import uuid
+import warnings
 from contextlib import asynccontextmanager
 from datetime import datetime
 from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
-import joblib
 import pandas as pd
-from fastapi import FastAPI, HTTPException, Query, status
+from fastapi import FastAPI, HTTPException, Query, Request, status
 from fastapi.middleware.cors import CORSMiddleware
+from prometheus_fastapi_instrumentator import Instrumentator
 from pydantic import BaseModel, Field
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from slowapi.util import get_remote_address
 
 from protest.config import Settings, get_settings
+from protest.logging import (
+    bind_request_context,
+    clear_request_context,
+    configure_logging,
+    get_logger,
+)
+from protest.metrics import (
+    record_prediction_error,
+    record_prediction_metrics,
+    set_app_info,
+    set_model_loaded,
+)
+from protest.models.ensemble import EnsembleModel
+
+# Suppress sklearn warnings for cleaner logs
+warnings.filterwarnings("ignore", category=UserWarning, module="sklearn")
 
 # ============================================================
 # Logging Setup
 # ============================================================
-logger = logging.getLogger(__name__)
+configure_logging()
+logger = get_logger(__name__)
+
+
+# ============================================================
+# Rate Limiting
+# ============================================================
+def get_rate_limit_key(request: Request) -> str:
+    """Get rate limit key from request (IP address)."""
+    return get_remote_address(request)
+
+
+limiter = Limiter(key_func=get_rate_limit_key)
+
+
+# ============================================================
+# Redis Cache
+# ============================================================
+class RedisCache:
+    """Redis cache for predictions."""
+
+    def __init__(self) -> None:
+        self._client: Any = None
+        self._enabled: bool = False
+
+    async def connect(self, redis_url: str | None, ttl: int = 3600) -> None:
+        """Connect to Redis."""
+        if not redis_url:
+            logger.info("Redis URL not configured, caching disabled")
+            return
+
+        try:
+            import redis.asyncio as redis
+
+            self._client = redis.from_url(redis_url, decode_responses=True)
+            await self._client.ping()
+            self._enabled = True
+            self._ttl = ttl
+            logger.info("Redis cache connected", redis_url=redis_url)
+        except Exception as e:
+            logger.warning("Failed to connect to Redis, caching disabled", error=str(e))
+            self._enabled = False
+
+    async def disconnect(self) -> None:
+        """Disconnect from Redis."""
+        if self._client:
+            await self._client.close()
+            logger.info("Redis cache disconnected")
+
+    @staticmethod
+    def _make_cache_key(params: dict[str, Any]) -> str:
+        """Create a cache key from prediction parameters."""
+        key_str = json.dumps(params, sort_keys=True)
+        return f"predict:{hashlib.md5(key_str.encode()).hexdigest()}"
+
+    async def get(self, params: dict[str, Any]) -> dict[str, Any] | None:
+        """Get cached prediction."""
+        if not self._enabled:
+            return None
+
+        try:
+            key = self._make_cache_key(params)
+            cached = await self._client.get(key)
+            if cached:
+                logger.debug("Cache hit", cache_key=key)
+                return json.loads(cached)
+            logger.debug("Cache miss", cache_key=key)
+            return None
+        except Exception as e:
+            logger.warning("Cache get failed", error=str(e))
+            return None
+
+    async def set(self, params: dict[str, Any], result: dict[str, Any]) -> None:
+        """Cache prediction result."""
+        if not self._enabled:
+            return
+
+        try:
+            key = self._make_cache_key(params)
+            await self._client.setex(key, self._ttl, json.dumps(result))
+            logger.debug("Cached prediction", cache_key=key, ttl=self._ttl)
+        except Exception as e:
+            logger.warning("Cache set failed", error=str(e))
+
+    @property
+    def is_enabled(self) -> bool:
+        """Check if cache is enabled."""
+        return self._enabled
+
+
+# Global cache instance
+cache = RedisCache()
 
 
 # ============================================================
@@ -34,6 +148,8 @@ class HealthResponse(BaseModel):
     status: str = "ok"
     version: str
     environment: str
+    model_loaded: bool = False
+    cache_enabled: bool = False
     timestamp: datetime = Field(default_factory=datetime.utcnow)
 
 
@@ -61,32 +177,38 @@ class PredictionResult(BaseModel):
         json_schema_extra = {"example": {"probability": 0.75, "confidence": 0.85}}
 
 
+class OutcomePrediction(BaseModel):
+    """Single outcome prediction."""
+
+    probability: float = Field(..., ge=0, le=1, description="Probability of outcome")
+    prediction: bool = Field(..., description="Binary prediction (True if likely)")
+
+
 class PredictionResponse(BaseModel):
     """Prediction response with probabilities."""
 
-    predictions: dict[str, list[list[float]]]
-    confidence_intervals: dict[str, float] | None = None
+    predictions: dict[str, OutcomePrediction]
+    model_id: str
     model_version: str
+    cached: bool = False
     timestamp: datetime = Field(default_factory=datetime.utcnow)
 
     class Config:
         json_schema_extra = {
             "example": {
                 "predictions": {
-                    "no_known_coercion": [[0.7, 0.3]],
-                    "arrests_detentions": [[0.8, 0.2]],
-                    "physical_harassment": [[0.6, 0.4]],
-                    "injuries_inflicted": [[0.9, 0.1]],
-                    "deaths_inflicted": [[0.95, 0.05]],
-                    "security_forces": [[0.4, 0.6]],
-                    "party_militias": [[0.85, 0.15]],
+                    "verbal_coercion": {"probability": 0.75, "prediction": True},
+                    "constraint": {"probability": 0.20, "prediction": False},
+                    "physical_mild": {"probability": 0.65, "prediction": True},
+                    "physical_severe": {"probability": 0.30, "prediction": False},
+                    "physical_deadly": {"probability": 0.10, "prediction": False},
+                    "security_presence": {"probability": 0.80, "prediction": True},
+                    "militia_presence": {"probability": 0.55, "prediction": True},
                 },
-                "confidence_intervals": {
-                    "no_known_coercion": 0.05,
-                    "arrests_detentions": 0.03,
-                },
+                "model_id": "abc123",
                 "model_version": "2.0.0",
-                "timestamp": "2026-01-23T12:00:00Z",
+                "cached": False,
+                "timestamp": "2026-01-24T12:00:00Z",
             }
         }
 
@@ -123,52 +245,122 @@ class ErrorResponse(BaseModel):
 class ModelManager:
     """Manages ML model loading and caching."""
 
+    # Target names for predictions
+    TARGET_NAMES = [
+        "verbal_coercion",
+        "constraint",
+        "physical_mild",
+        "physical_severe",
+        "physical_deadly",
+        "security_presence",
+        "militia_presence",
+    ]
+
     def __init__(self) -> None:
-        self._model: Any | None = None
-        self._pipeline: Any | None = None
+        self._model: EnsembleModel | None = None
         self._loaded: bool = False
 
     def load(self, settings: Settings) -> None:
-        """Load model and pipeline from disk."""
+        """Load ensemble model from disk."""
         model_path = Path(settings.model_path)
-        pipeline_path = Path(settings.pipeline_path)
 
         if not model_path.exists():
+            set_model_loaded(False)
             raise FileNotFoundError(f"Model not found at {model_path}")
-        if not pipeline_path.exists():
-            raise FileNotFoundError(f"Pipeline not found at {pipeline_path}")
 
-        logger.info(f"Loading model from {model_path}")
-        self._model = joblib.load(model_path)
-
-        logger.info(f"Loading pipeline from {pipeline_path}")
-        self._pipeline = joblib.load(pipeline_path)
-
+        logger.info("Loading ensemble model", model_path=str(model_path))
+        start_time = time.time()
+        self._model = EnsembleModel.load(model_path)
+        load_time = time.time() - start_time
         self._loaded = True
-        logger.info("Model and pipeline loaded successfully")
+
+        # Update metrics
+        set_model_loaded(True, load_time)
+
+        logger.info(
+            "Ensemble model loaded successfully",
+            model_id=self._model.metadata.model_id,
+            load_time_seconds=round(load_time, 2),
+        )
 
     @property
-    def model(self) -> Any:
+    def model(self) -> EnsembleModel:
         """Get the loaded model."""
         if not self._loaded or self._model is None:
             raise RuntimeError("Model not loaded. Call load() first.")
         return self._model
 
     @property
-    def pipeline(self) -> Any:
-        """Get the loaded pipeline."""
-        if not self._loaded or self._pipeline is None:
-            raise RuntimeError("Pipeline not loaded. Call load() first.")
-        return self._pipeline
-
-    @property
     def is_loaded(self) -> bool:
         """Check if model is loaded."""
         return self._loaded
 
+    @property
+    def model_id(self) -> str:
+        """Get model ID."""
+        if self._model:
+            return self._model.metadata.model_id
+        return "not_loaded"
+
+    @property
+    def model_type(self) -> str:
+        """Get model type."""
+        return "ensemble"
+
+    def predict(self, df: pd.DataFrame) -> dict[str, dict[str, Any]]:
+        """Run prediction and return formatted results."""
+        if not self._loaded or self._model is None:
+            raise RuntimeError("Model not loaded")
+
+        # Get predictions
+        probs = self._model.predict_proba(df)
+        preds = self._model.predict(df)
+
+        # Format results
+        results = {}
+        for i, name in enumerate(self.TARGET_NAMES):
+            if i < len(probs):
+                prob_positive = float(probs[i][0][1])
+                prediction = bool(preds[0][i] == 1)
+                results[name] = {
+                    "probability": prob_positive,
+                    "prediction": prediction,
+                }
+
+        return results
+
 
 # Global model manager instance
 model_manager = ModelManager()
+
+
+# ============================================================
+# Request Middleware
+# ============================================================
+async def request_context_middleware(request: Request, call_next):
+    """Middleware to add request context to logs."""
+    request_id = str(uuid.uuid4())[:8]
+    request.state.request_id = request_id
+
+    bind_request_context(
+        request_id=request_id,
+        method=request.method,
+        path=request.url.path,
+        client_ip=get_remote_address(request),
+    )
+
+    try:
+        response = await call_next(request)
+        logger.info(
+            "Request completed",
+            status_code=response.status_code,
+        )
+        return response
+    except Exception as e:
+        logger.error("Request failed", error=str(e))
+        raise
+    finally:
+        clear_request_context()
 
 
 # ============================================================
@@ -180,22 +372,42 @@ async def lifespan(_app: FastAPI):
     settings = get_settings()
 
     # Startup
-    logger.info(f"Starting {settings.app_name} v{settings.app_version}")
-    logger.info(f"Environment: {settings.environment}")
+    logger.info(
+        "Starting application",
+        app_name=settings.app_name,
+        version=settings.app_version,
+        environment=settings.environment,
+    )
 
     # Load model on startup (cache it for all requests)
     if settings.model_cache_enabled:
         try:
             model_manager.load(settings)
         except FileNotFoundError as e:
-            logger.warning(f"Model files not found: {e}. API will start but predictions will fail.")
+            logger.warning(
+                "Model files not found, predictions will fail",
+                error=str(e),
+            )
         except Exception as e:
-            logger.error(f"Failed to load model: {e}")
+            logger.error("Failed to load model", error=str(e))
+
+    # Set app info metrics
+    set_app_info(
+        version=settings.app_version,
+        environment=settings.environment,
+        model_id=model_manager.model_id,
+    )
+
+    # Connect to Redis cache
+    if settings.cache_enabled:
+        await cache.connect(settings.redis_url, settings.cache_ttl_seconds)
 
     yield
 
     # Shutdown
-    logger.info("Shutting down application")
+    if cache.is_enabled:
+        await cache.disconnect()
+    logger.info("Application shutdown complete")
 
 
 # ============================================================
@@ -215,6 +427,10 @@ def create_app() -> FastAPI:
         lifespan=lifespan,
     )
 
+    # Add rate limiter
+    app.state.limiter = limiter
+    app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
     # Configure CORS
     app.add_middleware(
         CORSMiddleware,
@@ -223,6 +439,13 @@ def create_app() -> FastAPI:
         allow_methods=settings.cors_allow_methods,
         allow_headers=settings.cors_allow_headers,
     )
+
+    # Add request context middleware
+    app.middleware("http")(request_context_middleware)
+
+    # Add Prometheus instrumentation
+    # Exposes /metrics endpoint with default HTTP metrics
+    Instrumentator().instrument(app).expose(app, include_in_schema=False)
 
     return app
 
@@ -247,6 +470,8 @@ async def health_check() -> HealthResponse:
         status="ok",
         version=settings.app_version,
         environment=settings.environment,
+        model_loaded=model_manager.is_loaded,
+        cache_enabled=cache.is_enabled,
     )
 
 
@@ -255,6 +480,7 @@ async def health_check() -> HealthResponse:
     response_model=PredictionResponse,
     responses={
         400: {"model": ErrorResponse, "description": "Invalid input"},
+        429: {"model": ErrorResponse, "description": "Rate limit exceeded"},
         500: {"model": ErrorResponse, "description": "Prediction error"},
         503: {"model": ErrorResponse, "description": "Model not available"},
     },
@@ -262,34 +488,83 @@ async def health_check() -> HealthResponse:
     summary="Get protest outcome predictions",
     description="Predict probabilities of various repression outcomes based on protest characteristics.",
 )
+@limiter.limit("100/minute")
 async def predict(
+    request: Request,  # noqa: ARG001 - required by slowapi rate limiter
     country: str = Query(..., description="Country (Iraq, Lebanon, Egypt)"),
     governorate: str = Query(..., description="Governorate/region"),
-    location_type: str = Query(..., description="Location type"),
-    demand_type: str = Query(..., description="Demand type"),
-    protest_tactic: str = Query(..., description="Primary tactic"),
-    protester_violence: str = Query(..., description="Protester violence level"),
+    location_type: str = Query(..., description="Location type (e.g., Midan, Main road)"),
+    demand_type: str = Query(..., description="Demand type (e.g., Politics (national), Economy)"),
+    protest_tactic: str = Query(..., description="Primary tactic (e.g., Demonstration / protest)"),
+    protester_violence: str = Query(..., description="Violence level (Peaceful, Riot, Unknown)"),
     combined_sizes: int = Query(..., ge=0, description="Number of participants"),
 ) -> PredictionResponse:
     """
     Generate predictions for protest outcomes.
 
-    Returns probabilities for 7 repression outcome categories.
+    Returns probabilities for 7 repression outcome categories:
+    - verbal_coercion: Verbal threats or warnings
+    - constraint: Movement restrictions or detentions
+    - physical_mild: Pushing, shoving, minor physical contact
+    - physical_severe: Beatings, tear gas, water cannons
+    - physical_deadly: Lethal force used
+    - security_presence: Security forces present at protest
+    - militia_presence: Militia groups present at protest
     """
     settings = get_settings()
 
+    # Build params dict for caching
+    params = {
+        "country": country,
+        "governorate": governorate,
+        "location_type": location_type,
+        "demand_type": demand_type,
+        "protest_tactic": protest_tactic,
+        "protester_violence": protester_violence,
+        "combined_sizes": combined_sizes,
+    }
+
+    logger.info("Prediction request received", **params)
+    start_time = time.time()
+
+    # Check cache first
+    cached_result = await cache.get(params)
+    if cached_result:
+        latency = time.time() - start_time
+        logger.info("Returning cached prediction")
+
+        # Record metrics for cached response
+        record_prediction_metrics(
+            country=country,
+            violence_level=protester_violence,
+            participant_count=combined_sizes,
+            predictions=cached_result["predictions"],
+            latency=latency,
+            cached=True,
+        )
+
+        return PredictionResponse(
+            predictions={
+                name: OutcomePrediction(**data)
+                for name, data in cached_result["predictions"].items()
+            },
+            model_id=cached_result["model_id"],
+            model_version=cached_result["model_version"],
+            cached=True,
+        )
+
     # Check if model is loaded
     if not model_manager.is_loaded:
-        # Try to load on-demand if not cached
         try:
             model_manager.load(settings)
         except FileNotFoundError as e:
+            logger.error("Model not available", error=str(e))
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
                 detail=f"Model not available: {e}",
             )
         except Exception as e:
-            logger.error(f"Failed to load model: {e}")
+            logger.error("Failed to load model", error=str(e))
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
                 detail="Model loading failed",
@@ -309,7 +584,7 @@ async def predict(
             }
         )
     except Exception as e:
-        logger.error(f"Input validation error: {e}")
+        logger.error("Input validation error", error=str(e))
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Invalid input: {e}",
@@ -317,32 +592,51 @@ async def predict(
 
     # Run prediction
     try:
-        processed_input = model_manager.pipeline.transform(prediction_input)
-        predictions = model_manager.model.predict_proba(processed_input)
+        results = model_manager.predict(prediction_input)
 
-        # Format predictions with meaningful names
-        prediction_names = [
-            "no_known_coercion",
-            "arrests_detentions",
-            "physical_harassment",
-            "injuries_inflicted",
-            "deaths_inflicted",
-            "security_forces",
-            "party_militias",
-        ]
+        # Convert to response format
+        predictions = {
+            name: OutcomePrediction(
+                probability=data["probability"],
+                prediction=data["prediction"],
+            )
+            for name, data in results.items()
+        }
 
-        formatted_predictions = {}
-        for i, name in enumerate(prediction_names):
-            if i < len(predictions):
-                formatted_predictions[name] = predictions[i].tolist()
-
-        return PredictionResponse(
-            predictions=formatted_predictions,
+        response = PredictionResponse(
+            predictions=predictions,
+            model_id=model_manager.model_id,
             model_version=settings.app_version,
+            cached=False,
         )
 
+        # Cache the result
+        await cache.set(
+            params,
+            {
+                "predictions": results,
+                "model_id": model_manager.model_id,
+                "model_version": settings.app_version,
+            },
+        )
+
+        # Record metrics
+        latency = time.time() - start_time
+        record_prediction_metrics(
+            country=country,
+            violence_level=protester_violence,
+            participant_count=combined_sizes,
+            predictions=results,
+            latency=latency,
+            cached=False,
+        )
+
+        logger.info("Prediction completed successfully", latency_seconds=round(latency, 3))
+        return response
+
     except Exception as e:
-        logger.error(f"Prediction error: {e}")
+        logger.error("Prediction error", error=str(e))
+        record_prediction_error(country=country)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Prediction failed: {e}",
@@ -361,17 +655,9 @@ async def get_model_info() -> ModelInfoResponse:
     settings = get_settings()
 
     return ModelInfoResponse(
-        model_type="random_forest",  # TODO: Get from model metadata
+        model_type=model_manager.model_type,
         version=settings.app_version,
-        target_columns=[
-            "no_known_coercion",
-            "arrests_detentions",
-            "physical_harassment",
-            "injuries_inflicted",
-            "deaths_inflicted",
-            "security_forces",
-            "party_militias",
-        ],
+        target_columns=ModelManager.TARGET_NAMES,
         feature_columns=[
             "country",
             "governorate",
@@ -393,10 +679,10 @@ async def get_model_info() -> ModelInfoResponse:
     },
     tags=["Model"],
     summary="Get feature importance",
-    description="Get feature importance scores from the model.",
+    description="Get feature importance scores from the ensemble model.",
 )
 async def get_feature_importance() -> FeatureImportanceResponse:
-    """Get feature importance from the loaded model."""
+    """Get feature importance from the loaded ensemble model."""
     settings = get_settings()
 
     if not model_manager.is_loaded:
@@ -405,44 +691,22 @@ async def get_feature_importance() -> FeatureImportanceResponse:
             detail="Model not loaded",
         )
 
-    # Get feature importance from the model
     try:
-        # For sklearn models with feature_importances_
-        if hasattr(model_manager.model, "feature_importances_"):
-            importances = model_manager.model.feature_importances_
-            feature_names = model_manager.pipeline.get_feature_names_out()
-            feature_importance = dict(zip(feature_names, importances.tolist(), strict=False))
-        elif hasattr(model_manager.model, "estimators_"):
-            # MultiOutputClassifier - average across estimators
-            import numpy as np
+        # Get feature importance from ensemble model
+        feature_importance = model_manager.model.get_feature_importance()
 
-            all_importances = []
-            for estimator in model_manager.model.estimators_:
-                if hasattr(estimator, "feature_importances_"):
-                    all_importances.append(estimator.feature_importances_)
-            if all_importances:
-                avg_importances = np.mean(all_importances, axis=0)
-                feature_names = model_manager.pipeline.get_feature_names_out()
-                feature_importance = dict(
-                    zip(feature_names, avg_importances.tolist(), strict=False)
-                )
-            else:
-                feature_importance = {}
-        else:
-            feature_importance = {}
-
-        # Sort by importance
-        feature_importance = dict(
-            sorted(feature_importance.items(), key=lambda x: x[1], reverse=True)
+        # Sort by importance (descending) and take top 20
+        sorted_features = dict(
+            sorted(feature_importance.items(), key=lambda x: x[1], reverse=True)[:20]
         )
 
         return FeatureImportanceResponse(
-            feature_importance=feature_importance,
+            feature_importance=sorted_features,
             model_version=settings.app_version,
         )
 
     except Exception as e:
-        logger.error(f"Error getting feature importance: {e}")
+        logger.error("Error getting feature importance", error=str(e))
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to get feature importance: {e}",
@@ -455,15 +719,85 @@ async def get_feature_importance() -> FeatureImportanceResponse:
     summary="Get available regions",
     description="Get list of available countries and regions for prediction.",
 )
-async def get_regions() -> dict[str, list[str]]:
-    """Get available countries and their regions."""
-    # TODO: Load from data or cache
-    return {
-        "countries": ["Iraq", "Lebanon", "Egypt"],
-        "Iraq": ["Baghdad", "Basrah", "Erbil", "Najaf", "Karbala"],
-        "Lebanon": ["Beirut", "Tripoli", "Sidon", "Tyre"],
-        "Egypt": ["Cairo", "Alexandria", "Giza"],
-    }
+async def get_regions() -> dict[str, Any]:
+    """Get available countries and their regions from the training data."""
+    settings = get_settings()
+    data_path = settings.data_path / "full_df.csv"
+
+    try:
+        if data_path.exists():
+            df = pd.read_csv(data_path, usecols=["country", "governorate"])
+            countries = sorted(df["country"].dropna().unique().tolist())
+
+            result: dict[str, Any] = {"countries": countries}
+            for country in countries:
+                governorates = sorted(
+                    df[df["country"] == country]["governorate"].dropna().unique().tolist()
+                )
+                result[country] = governorates
+
+            return result
+        else:
+            # Fallback to hardcoded values
+            return {
+                "countries": ["Iraq", "Lebanon", "Egypt"],
+                "Iraq": ["Baghdad", "Basra", "Erbil", "Najaf", "Karbala"],
+                "Lebanon": ["Beirut", "Tripoli", "Sidon", "Tyre"],
+                "Egypt": ["Cairo", "Alexandria", "Giza"],
+            }
+    except Exception as e:
+        logger.warning("Failed to load regions from data", error=str(e))
+        return {
+            "countries": ["Iraq", "Lebanon", "Egypt"],
+            "Iraq": ["Baghdad", "Basra"],
+            "Lebanon": ["Beirut"],
+            "Egypt": ["Cairo"],
+        }
+
+
+@app.get(
+    "/options",
+    tags=["Data"],
+    summary="Get input options",
+    description="Get available options for all prediction input fields.",
+)
+async def get_options() -> dict[str, list[str]]:
+    """Get available options for prediction inputs from training data."""
+    settings = get_settings()
+    data_path = settings.data_path / "full_df.csv"
+
+    try:
+        if data_path.exists():
+            df = pd.read_csv(
+                data_path,
+                usecols=[
+                    "locationtypeend",
+                    "demandtypeone",
+                    "tacticprimary",
+                    "violence",
+                ],
+            )
+            return {
+                "location_types": sorted(df["locationtypeend"].dropna().unique().tolist()),
+                "demand_types": sorted(df["demandtypeone"].dropna().unique().tolist()),
+                "tactics": sorted(df["tacticprimary"].dropna().unique().tolist()),
+                "violence_levels": sorted(df["violence"].dropna().unique().tolist()),
+            }
+        else:
+            return {
+                "location_types": ["Midan", "Main road", "Government building"],
+                "demand_types": ["Politics (national)", "Economy", "Services"],
+                "tactics": ["Demonstration / protest", "Roadblock or blockade"],
+                "violence_levels": ["Peaceful", "Riot", "Unknown"],
+            }
+    except Exception as e:
+        logger.warning("Failed to load options from data", error=str(e))
+        return {
+            "location_types": ["Midan", "Main road"],
+            "demand_types": ["Politics (national)"],
+            "tactics": ["Demonstration / protest"],
+            "violence_levels": ["Peaceful", "Riot"],
+        }
 
 
 # ============================================================
@@ -474,12 +808,6 @@ def main() -> None:
     import uvicorn
 
     settings = get_settings()
-
-    # Configure logging
-    logging.basicConfig(
-        level=getattr(logging, settings.log_level),
-        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    )
 
     uvicorn.run(
         "api.api:app",
