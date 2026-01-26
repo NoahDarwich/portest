@@ -3,8 +3,11 @@
 import { useState, useEffect } from "react";
 import { PredictionForm } from "@/components/prediction-form";
 import { PredictionResults } from "@/components/prediction-results";
+import { FeatureImportance } from "@/components/feature-importance";
+import { ModelInfo } from "@/components/model-info";
 import { api, PredictionInput, PredictionResponse, HealthResponse } from "@/lib/api";
-import { AlertTriangle, CheckCircle, Shield } from "lucide-react";
+import { AlertTriangle, CheckCircle, Shield, Zap, Brain } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 function HealthBadge({ health, error }: { health: HealthResponse | null; error: boolean }) {
   if (error) {
@@ -32,12 +35,39 @@ function HealthBadge({ health, error }: { health: HealthResponse | null; error: 
   );
 }
 
+type TabType = "predict" | "model";
+
+function TabButton({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={cn(
+        "flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-colors",
+        active
+          ? "bg-blue-600 text-white"
+          : "bg-white text-gray-600 hover:bg-gray-100 border border-gray-200"
+      )}
+    >
+      {children}
+    </button>
+  );
+}
+
 export default function Home() {
   const [health, setHealth] = useState<HealthResponse | null>(null);
   const [healthError, setHealthError] = useState(false);
   const [results, setResults] = useState<PredictionResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<TabType>("predict");
 
   useEffect(() => {
     async function checkHealth() {
@@ -90,8 +120,20 @@ export default function Home() {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Tab Navigation */}
+        <div className="flex gap-3 mb-6">
+          <TabButton active={activeTab === "predict"} onClick={() => setActiveTab("predict")}>
+            <Zap className="h-4 w-4" />
+            Predict
+          </TabButton>
+          <TabButton active={activeTab === "model"} onClick={() => setActiveTab("model")}>
+            <Brain className="h-4 w-4" />
+            Model Info
+          </TabButton>
+        </div>
+
         {/* Error Banner */}
-        {error && (
+        {error && activeTab === "predict" && (
           <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center gap-3">
             <AlertTriangle className="h-5 w-5 text-red-600 flex-shrink-0" />
             <div>
@@ -101,40 +143,53 @@ export default function Home() {
           </div>
         )}
 
-        {/* Two Column Layout */}
-        <div className="grid gap-8 lg:grid-cols-2">
-          <div>
-            <PredictionForm onPredict={handlePredict} isLoading={isLoading} />
-          </div>
-          <div>
-            <PredictionResults results={results} />
-          </div>
-        </div>
+        {/* Predict Tab */}
+        {activeTab === "predict" && (
+          <>
+            {/* Two Column Layout */}
+            <div className="grid gap-8 lg:grid-cols-2">
+              <div>
+                <PredictionForm onPredict={handlePredict} isLoading={isLoading} />
+              </div>
+              <div>
+                <PredictionResults results={results} />
+              </div>
+            </div>
 
-        {/* Info Section */}
-        <div className="mt-12 grid gap-6 md:grid-cols-3">
-          <div className="bg-white p-6 rounded-lg border border-gray-200">
-            <h3 className="font-semibold text-gray-900 mb-2">Coverage</h3>
-            <p className="text-sm text-gray-600">
-              Predictions cover protests in Iraq, Lebanon, and Egypt based on historical data
-              from 2017-2022.
-            </p>
+            {/* Info Section */}
+            <div className="mt-12 grid gap-6 md:grid-cols-3">
+              <div className="bg-white p-6 rounded-lg border border-gray-200">
+                <h3 className="font-semibold text-gray-900 mb-2">Coverage</h3>
+                <p className="text-sm text-gray-600">
+                  Predictions cover protests in Iraq, Lebanon, and Egypt based on historical data
+                  from 2017-2022.
+                </p>
+              </div>
+              <div className="bg-white p-6 rounded-lg border border-gray-200">
+                <h3 className="font-semibold text-gray-900 mb-2">Outcomes</h3>
+                <p className="text-sm text-gray-600">
+                  7 outcome types predicted: verbal coercion, constraint, mild/severe/deadly
+                  physical response, and security/militia presence.
+                </p>
+              </div>
+              <div className="bg-white p-6 rounded-lg border border-gray-200">
+                <h3 className="font-semibold text-gray-900 mb-2">Model</h3>
+                <p className="text-sm text-gray-600">
+                  Ensemble model combining Random Forest, XGBoost, and LightGBM for robust
+                  predictions with calibrated probabilities.
+                </p>
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* Model Info Tab */}
+        {activeTab === "model" && (
+          <div className="grid gap-8 lg:grid-cols-2">
+            <ModelInfo />
+            <FeatureImportance />
           </div>
-          <div className="bg-white p-6 rounded-lg border border-gray-200">
-            <h3 className="font-semibold text-gray-900 mb-2">Outcomes</h3>
-            <p className="text-sm text-gray-600">
-              7 outcome types predicted: verbal coercion, constraint, mild/severe/deadly
-              physical response, and security/militia presence.
-            </p>
-          </div>
-          <div className="bg-white p-6 rounded-lg border border-gray-200">
-            <h3 className="font-semibold text-gray-900 mb-2">Model</h3>
-            <p className="text-sm text-gray-600">
-              Ensemble model combining Random Forest, XGBoost, and LightGBM for robust
-              predictions with calibrated probabilities.
-            </p>
-          </div>
-        </div>
+        )}
       </main>
 
       {/* Footer */}

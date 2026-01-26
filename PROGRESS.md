@@ -124,6 +124,9 @@ Trained and validated the ensemble model on 13,387 protest records.
 - ✅ PredictionResults component with visual outcome display
 - ✅ Main dashboard page with health status indicator
 - ✅ Responsive two-column layout (form + results)
+- ✅ Tab navigation (Predict / Model Info)
+- ✅ Feature importance chart with recharts
+- ✅ Model info panel showing targets and features
 - ✅ Docker configuration for frontend container
 - ✅ Moved legacy Streamlit frontend to `frontend_streamlit/`
 
@@ -195,6 +198,8 @@ portest/
 │   │   │   │   ├── input.tsx
 │   │   │   │   ├── label.tsx
 │   │   │   │   └── select.tsx
+│   │   │   ├── feature-importance.tsx
+│   │   │   ├── model-info.tsx
 │   │   │   ├── prediction-form.tsx
 │   │   │   └── prediction-results.tsx
 │   │   └── lib/
