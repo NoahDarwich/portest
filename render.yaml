@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: portest-api
+    runtime: python
+    buildCommand: pip install -e .
+    startCommand: python -m api.api
+    envVars:
+      - key: ENVIRONMENT
+        value: production
+      - key: PORT
+        value: "8000"
+    healthCheckPath: /health
