@@ -6,7 +6,7 @@ import { PredictionResults } from "@/components/prediction-results";
 import { FeatureImportance } from "@/components/feature-importance";
 import { ModelInfo } from "@/components/model-info";
 import { api, PredictionInput, PredictionResponse, HealthResponse } from "@/lib/api";
-import { AlertTriangle, CheckCircle, Shield, Zap, Brain, Book } from "lucide-react";
+import { AlertTriangle, CheckCircle, Shield, Zap, Brain, Book, HelpCircle } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 
@@ -115,6 +115,13 @@ export default function Home() {
               </div>
             </div>
             <div className="flex items-center gap-4">
+              <Link
+                href="/about"
+                className="flex items-center gap-1 text-sm text-gray-600 hover:text-gray-900"
+              >
+                <HelpCircle className="h-4 w-4" />
+                Guide
+              </Link>
               <Link
                 href="/docs"
                 className="flex items-center gap-1 text-sm text-gray-600 hover:text-gray-900"
