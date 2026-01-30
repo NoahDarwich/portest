@@ -1,74 +1,89 @@
-# Data analysis
-- Document here the project: pro-test
-- Description: Project Description
-- Data Source:
-- Type of analysis:
+# Pro-Test v2.0
 
-Please document the project the better you can.
+Protest Outcome Prediction System using Machine Learning
 
-# Startup the project
+[![CI](https://github.com/NoahDarwich/portest/actions/workflows/ci.yml/badge.svg)](https://github.com/NoahDarwich/portest/actions/workflows/ci.yml)
 
-The initial setup.
+## Overview
 
-Create virtualenv and install the project:
-```bash
-sudo apt-get install virtualenv python-pip python-dev
-deactivate; virtualenv ~/venv ; source ~/venv/bin/activate ;\
-    pip install pip -U; pip install -r requirements.txt
-```
+Pro-Test predicts likely security responses to protests in Iraq, Lebanon, and Egypt using an ensemble machine learning model trained on 13,000+ historical protest events (2017-2022).
 
-Unittest test:
-```bash
-make clean install test
-```
+**Predicted Outcomes:**
+- Verbal coercion
+- Constraint (detention/restriction)
+- Physical coercion (mild/severe/deadly)
+- Security forces presence
+- Militia presence
 
-Check for pro-test in gitlab.com/{group}.
-If your project is not set please add it:
+## Live Demo
 
-- Create a new project on `gitlab.com/{group}/pro-test`
-- Then populate it:
+- **Frontend:** Hosted on Vercel
+- **Backend API:** Hosted on Render
 
-```bash
-##   e.g. if group is "{group}" and project_name is "pro-test"
-git remote add origin git@github.com:{group}/pro-test.git
-git push -u origin master
-git push -u origin --tags
-```
+## Tech Stack
 
-Functionnal test with a script:
+| Layer | Technology |
+|-------|------------|
+| Frontend | Next.js 16, TypeScript, Tailwind CSS |
+| Backend | FastAPI, Python 3.11 |
+| ML Models | Ensemble (Random Forest + XGBoost + LightGBM) |
+| Caching | Redis |
+| Monitoring | Prometheus + Grafana |
+| CI/CD | GitHub Actions |
+
+## Quick Start
+
+### Local Development
 
 ```bash
-cd
-mkdir tmp
-cd tmp
-pro-test-run
+# Backend
+pip install -e ".[dev]"
+python -m api.api
+
+# Frontend
+cd frontend
+npm install
+npm run dev
 ```
 
-# Install
-
-Go to `https://github.com/{group}/pro-test` to see the project, manage issues,
-setup you ssh public key, ...
-
-Create a python3 virtualenv and activate it:
+### Docker
 
 ```bash
-sudo apt-get install virtualenv python-pip python-dev
-deactivate; virtualenv -ppython3 ~/venv ; source ~/venv/bin/activate
+docker-compose up
 ```
 
-Clone the project and install it:
+## API Endpoints
 
-```bash
-git clone git@github.com:{group}/pro-test.git
-cd pro-test
-pip install -r requirements.txt
-make clean install test                # install and test
-```
-Functionnal test with a script:
+| Endpoint | Description |
+|----------|-------------|
+| `GET /health` | Health check |
+| `GET /predict` | Get predictions for protest outcomes |
+| `GET /regions` | Available countries and governorates |
+| `GET /options` | Input field options |
+| `GET /model/info` | Model information |
+| `GET /model/features` | Feature importance |
+| `GET /metrics` | Prometheus metrics |
 
-```bash
-cd
-mkdir tmp
-cd tmp
-pro-test-run
+## Project Structure
+
 ```
+portest/
+├── api/                 # FastAPI backend
+├── protest/             # Core ML module
+├── frontend/            # Next.js frontend
+├── tests/               # Test suite (83 tests)
+├── monitoring/          # Prometheus + Grafana
+├── deploy/              # Deployment configs
+└── models/              # Trained model files
+```
+
+## Documentation
+
+- [API Documentation](/frontend/src/app/docs) - Endpoint reference
+- [Getting Started Guide](/frontend/src/app/about) - Usage tutorial
+- [Model Limitations](/docs/MODEL_LIMITATIONS.md) - Bias and constraints
+- [Development Progress](/PROGRESS.md) - Implementation details
+
+## License
+
+MIT
