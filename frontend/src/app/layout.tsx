@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Pro-Test | Protest Outcome Prediction",
-  description: "Predict protest outcomes using machine learning. Covers Iraq, Lebanon, and Egypt with 7 outcome types.",
+  title: "Pro-Test | Predictive Modelling for a Safer Forum of Dissent",
+  description: "Predict protest repression methods using machine learning. Covers Iraq, Lebanon, and Egypt with 7 repression method predictions.",
 };
 
 export default function RootLayout({

@@ -27,45 +27,45 @@ const steps = [
   {
     number: 4,
     title: "Get Predictions",
-    description: "Click 'Predict Outcomes' to receive probability estimates for 7 different response types.",
+    description: "Click 'Predict Outcomes' to receive probability estimates for 7 repression methods.",
     icon: CheckCircle,
   },
 ];
 
 const outcomes = [
   {
-    name: "Verbal Coercion",
-    description: "Threats, warnings, or verbal intimidation by security forces",
-    severity: "low",
-  },
-  {
-    name: "Constraint",
-    description: "Movement restrictions, detentions, or arrests of protesters",
-    severity: "medium",
-  },
-  {
-    name: "Physical (Mild)",
-    description: "Pushing, shoving, or minor physical contact",
-    severity: "medium",
-  },
-  {
-    name: "Physical (Severe)",
-    description: "Beatings, tear gas, water cannons, or rubber bullets",
+    name: "Tear Gas",
+    description: "Use of tear gas against protesters by security forces",
     severity: "high",
   },
   {
-    name: "Physical (Deadly)",
-    description: "Use of lethal force or live ammunition",
+    name: "Rubber Bullets",
+    description: "Use of rubber bullets or similar non-lethal projectiles",
+    severity: "high",
+  },
+  {
+    name: "Live Ammunition",
+    description: "Use of live ammunition against protesters",
     severity: "critical",
   },
   {
-    name: "Security Presence",
-    description: "Deployment of police or security forces at the protest",
-    severity: "info",
+    name: "Sticks / Batons",
+    description: "Use of batons, sticks, or blunt instruments",
+    severity: "medium",
   },
   {
-    name: "Militia Presence",
-    description: "Presence of militia or paramilitary groups",
+    name: "Surround",
+    description: "Protesters surrounded or encircled by security forces",
+    severity: "medium",
+  },
+  {
+    name: "Area Cleared",
+    description: "Protest area forcibly cleared by security forces",
+    severity: "medium",
+  },
+  {
+    name: "Police Repression",
+    description: "General police repressive action against protesters",
     severity: "high",
   },
 ];
@@ -137,11 +137,11 @@ export default function AboutPage() {
       <section className="bg-gradient-to-b from-blue-50 to-white py-12">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-3xl font-bold text-gray-900 mb-4">
-            Predict Protest Outcomes with Machine Learning
+            Predict Protest Repression Methods with Machine Learning
           </h2>
           <p className="text-lg text-gray-600 mb-8 max-w-2xl mx-auto">
             Pro-Test uses an ensemble of machine learning models trained on historical protest
-            data to predict likely security responses and outcomes.
+            data to predict likely repression methods used against protesters.
           </p>
           <Link href="/">
             <Button className="gap-2">
@@ -174,9 +174,9 @@ export default function AboutPage() {
           </div>
         </section>
 
-        {/* Predicted Outcomes */}
+        {/* Predicted Repression Methods */}
         <section className="mb-16">
-          <h3 className="text-2xl font-bold text-gray-900 mb-6">Predicted Outcomes</h3>
+          <h3 className="text-2xl font-bold text-gray-900 mb-6">Predicted Repression Methods</h3>
           <Card>
             <CardContent className="p-0">
               <div className="divide-y">
@@ -249,7 +249,7 @@ export default function AboutPage() {
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
             <p className="text-sm text-gray-500">
-              Pro-Test v2.0 - Protest Outcome Prediction System
+              Pro-Test v2.0 - Predictive Modelling for a Safer Forum of Dissent
             </p>
             <div className="flex gap-4 text-sm">
               <Link href="/docs" className="text-gray-500 hover:text-gray-900">

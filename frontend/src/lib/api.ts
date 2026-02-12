@@ -59,6 +59,20 @@ export interface ModelInfoResponse {
   timestamp: string;
 }
 
+export interface MapDataPoint {
+  lat: number;
+  lng: number;
+  repression: string;
+  country: string;
+  violence_heat: number;
+}
+
+export interface RepressionStatsResponse {
+  counts: Record<string, number>;
+  total: number;
+  country_filter: string | null;
+}
+
 class ApiClient {
   private baseUrl: string;
 
@@ -115,6 +129,15 @@ class ApiClient {
 
   async getModelInfo(): Promise<ModelInfoResponse> {
     return this.fetch<ModelInfoResponse>("/model/info");
+  }
+
+  async getMapData(): Promise<MapDataPoint[]> {
+    return this.fetch<MapDataPoint[]>("/mapdata");
+  }
+
+  async getRepressionStats(country?: string): Promise<RepressionStatsResponse> {
+    const params = country ? `?country=${encodeURIComponent(country)}` : "";
+    return this.fetch<RepressionStatsResponse>(`/repression-stats${params}`);
   }
 }
 

@@ -45,13 +45,13 @@ class TestPredictionIntegration:
 
         # Verify all outcomes present
         expected_outcomes = [
-            "verbal_coercion",
-            "constraint",
-            "physical_mild",
-            "physical_severe",
-            "physical_deadly",
-            "security_presence",
-            "militia_presence",
+            "teargas",
+            "rubberbullets",
+            "liveammo",
+            "sticks",
+            "surround",
+            "cleararea",
+            "policerepress",
         ]
 
         for outcome in expected_outcomes:

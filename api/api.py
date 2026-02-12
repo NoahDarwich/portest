@@ -197,13 +197,13 @@ class PredictionResponse(BaseModel):
         json_schema_extra = {
             "example": {
                 "predictions": {
-                    "verbal_coercion": {"probability": 0.75, "prediction": True},
-                    "constraint": {"probability": 0.20, "prediction": False},
-                    "physical_mild": {"probability": 0.65, "prediction": True},
-                    "physical_severe": {"probability": 0.30, "prediction": False},
-                    "physical_deadly": {"probability": 0.10, "prediction": False},
-                    "security_presence": {"probability": 0.80, "prediction": True},
-                    "militia_presence": {"probability": 0.55, "prediction": True},
+                    "teargas": {"probability": 0.75, "prediction": True},
+                    "rubberbullets": {"probability": 0.20, "prediction": False},
+                    "liveammo": {"probability": 0.10, "prediction": False},
+                    "sticks": {"probability": 0.30, "prediction": False},
+                    "surround": {"probability": 0.65, "prediction": True},
+                    "cleararea": {"probability": 0.55, "prediction": True},
+                    "policerepress": {"probability": 0.80, "prediction": True},
                 },
                 "model_id": "abc123",
                 "model_version": "2.0.0",
@@ -245,15 +245,15 @@ class ErrorResponse(BaseModel):
 class ModelManager:
     """Manages ML model loading and caching."""
 
-    # Target names for predictions
+    # Target names for predictions (repression methods the model predicts)
     TARGET_NAMES = [
-        "verbal_coercion",
-        "constraint",
-        "physical_mild",
-        "physical_severe",
-        "physical_deadly",
-        "security_presence",
-        "militia_presence",
+        "teargas",
+        "rubberbullets",
+        "liveammo",
+        "sticks",
+        "surround",
+        "cleararea",
+        "policerepress",
     ]
 
     def __init__(self) -> None:
@@ -502,14 +502,14 @@ async def predict(
     """
     Generate predictions for protest outcomes.
 
-    Returns probabilities for 7 repression outcome categories:
-    - verbal_coercion: Verbal threats or warnings
-    - constraint: Movement restrictions or detentions
-    - physical_mild: Pushing, shoving, minor physical contact
-    - physical_severe: Beatings, tear gas, water cannons
-    - physical_deadly: Lethal force used
-    - security_presence: Security forces present at protest
-    - militia_presence: Militia groups present at protest
+    Returns probabilities for 7 repression method categories:
+    - teargas: Use of tear gas
+    - rubberbullets: Use of rubber bullets
+    - liveammo: Use of live ammunition
+    - sticks: Use of batons/sticks
+    - surround: Protesters surrounded by security forces
+    - cleararea: Area cleared by security forces
+    - policerepress: General police repression
     """
     settings = get_settings()
 
@@ -798,6 +798,113 @@ async def get_options() -> dict[str, list[str]]:
             "tactics": ["Demonstration / protest"],
             "violence_levels": ["Peaceful", "Riot"],
         }
+
+
+# ============================================================
+# Map & Statistics Endpoints
+# ============================================================
+_map_data_cache: list[dict[str, Any]] | None = None
+_repression_stats_cache: dict[str, Any] | None = None
+
+
+@app.get(
+    "/mapdata",
+    tags=["Data"],
+    summary="Get protest map data",
+    description="Get GPS coordinates and repression data for all protests with valid locations.",
+)
+async def get_map_data() -> list[dict[str, Any]]:
+    """Return protest GPS points for the density heatmap."""
+    global _map_data_cache
+    if _map_data_cache is not None:
+        return _map_data_cache
+
+    settings = get_settings()
+    data_path = settings.data_path / "full_df.csv"
+
+    try:
+        df = pd.read_csv(
+            data_path,
+            usecols=[
+                "gpslatend",
+                "gpslongend",
+                "repression",
+                "country",
+                "violence",
+            ],
+        )
+        df = df.dropna(subset=["gpslatend", "gpslongend"])
+        df["violence_heat"] = df["violence"].notna().astype(int)
+
+        points = []
+        for _, row in df.iterrows():
+            points.append(
+                {
+                    "lat": round(float(row["gpslatend"]), 5),
+                    "lng": round(float(row["gpslongend"]), 5),
+                    "repression": str(row["repression"]) if pd.notna(row["repression"]) else "",
+                    "country": str(row["country"]) if pd.notna(row["country"]) else "",
+                    "violence_heat": int(row["violence_heat"]),
+                }
+            )
+
+        _map_data_cache = points
+        logger.info("Map data loaded", point_count=len(points))
+        return points
+
+    except Exception as e:
+        logger.error("Failed to load map data", error=str(e))
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to load map data: {e}",
+        )
+
+
+@app.get(
+    "/repression-stats",
+    tags=["Data"],
+    summary="Get historical repression statistics",
+    description="Get distribution of repression types from historical data, optionally filtered by country.",
+)
+async def get_repression_stats(
+    country: str | None = Query(None, description="Optional country filter"),
+) -> dict[str, Any]:
+    """Return historical repression type distribution."""
+    global _repression_stats_cache
+
+    # Use cache for unfiltered requests
+    if country is None and _repression_stats_cache is not None:
+        return _repression_stats_cache
+
+    settings = get_settings()
+    data_path = settings.data_path / "full_df.csv"
+
+    try:
+        df = pd.read_csv(data_path, usecols=["repression", "country"])
+
+        if country:
+            df = df[df["country"] == country]
+
+        counts = df["repression"].value_counts().to_dict()
+        total = int(df["repression"].notna().sum())
+
+        result = {
+            "counts": {str(k): int(v) for k, v in counts.items()},
+            "total": total,
+            "country_filter": country,
+        }
+
+        if country is None:
+            _repression_stats_cache = result
+
+        return result
+
+    except Exception as e:
+        logger.error("Failed to load repression stats", error=str(e))
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to load repression stats: {e}",
+        )
 
 
 # ============================================================

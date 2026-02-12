@@ -58,8 +58,8 @@ class TestMetricsModule:
             violence_level="Peaceful",
             participant_count=100,
             predictions={
-                "verbal_coercion": {"probability": 0.75, "prediction": True},
-                "constraint": {"probability": 0.20, "prediction": False},
+                "teargas": {"probability": 0.75, "prediction": True},
+                "rubberbullets": {"probability": 0.20, "prediction": False},
             },
             latency=0.05,
             cached=False,
@@ -71,7 +71,7 @@ class TestMetricsModule:
             violence_level="Riot",
             participant_count=500,
             predictions={
-                "verbal_coercion": {"probability": 0.90, "prediction": True},
+                "teargas": {"probability": 0.90, "prediction": True},
             },
             latency=0.001,
             cached=True,

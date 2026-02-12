@@ -10,7 +10,7 @@ const endpoints = [
     path: "/health",
     description: "Check API health status and model availability",
     response: `{
-  "status": "healthy",
+  "status": "ok",
   "version": "2.0.0",
   "environment": "production",
   "model_loaded": true,
@@ -21,11 +21,11 @@ const endpoints = [
   {
     method: "GET",
     path: "/predict",
-    description: "Get predictions for protest outcomes based on input parameters",
+    description: "Get predictions for repression methods based on protest characteristics",
     params: [
       { name: "country", type: "string", required: true, desc: "Country name (Iraq, Lebanon, Egypt)" },
       { name: "governorate", type: "string", required: true, desc: "Governorate/region within country" },
-      { name: "location_type", type: "string", required: true, desc: "Type of location (urban, rural, etc.)" },
+      { name: "location_type", type: "string", required: true, desc: "Type of location (e.g., Midan, Main road)" },
       { name: "demand_type", type: "string", required: true, desc: "Type of protest demand" },
       { name: "protest_tactic", type: "string", required: true, desc: "Primary tactic used" },
       { name: "protester_violence", type: "string", required: true, desc: "Level of protester violence" },
@@ -33,14 +33,51 @@ const endpoints = [
     ],
     response: `{
   "predictions": {
-    "verbal_coercion": { "probability": 0.65, "prediction": true },
-    "constraint": { "probability": 0.42, "prediction": false },
-    ...
+    "teargas": { "probability": 0.65, "prediction": true },
+    "rubberbullets": { "probability": 0.20, "prediction": false },
+    "liveammo": { "probability": 0.10, "prediction": false },
+    "sticks": { "probability": 0.30, "prediction": false },
+    "surround": { "probability": 0.55, "prediction": true },
+    "cleararea": { "probability": 0.42, "prediction": false },
+    "policerepress": { "probability": 0.80, "prediction": true }
   },
   "model_id": "ensemble_2415a4b0",
   "model_version": "2.0.0",
   "cached": false,
   "timestamp": "2026-01-26T12:00:00Z"
+}`,
+  },
+  {
+    method: "GET",
+    path: "/mapdata",
+    description: "Get GPS coordinates and repression data for all protests with valid locations (~11K points)",
+    response: `[
+  {
+    "lat": 33.3404,
+    "lng": 44.4333,
+    "repression": "Injuries inflicted",
+    "country": "Iraq",
+    "violence_heat": 0
+  },
+  ...
+]`,
+  },
+  {
+    method: "GET",
+    path: "/repression-stats",
+    description: "Get historical distribution of repression types, optionally filtered by country",
+    params: [
+      { name: "country", type: "string", required: false, desc: "Optional country filter (Iraq, Lebanon, Egypt)" },
+    ],
+    response: `{
+  "counts": {
+    "No known coercion, no security presence": 10585,
+    "Security forces or other repressive groups present at event": 804,
+    "Injuries inflicted": 548,
+    ...
+  },
+  "total": 13387,
+  "country_filter": null
 }`,
   },
   {
@@ -59,10 +96,10 @@ const endpoints = [
     path: "/options",
     description: "Get available options for prediction input fields",
     response: `{
-  "location_types": ["urban", "rural", ...],
-  "demand_types": ["political", "economic", ...],
-  "tactics": ["march", "rally", ...],
-  "violence_levels": ["peaceful", "property damage", ...]
+  "location_types": ["Midan", "Main road", ...],
+  "demand_types": ["Politics (national)", "Economy", ...],
+  "tactics": ["Demonstration / protest", ...],
+  "violence_levels": ["Peaceful", "Riot", ...]
 }`,
   },
   {
@@ -70,9 +107,10 @@ const endpoints = [
     path: "/model/info",
     description: "Get information about the loaded prediction model",
     response: `{
-  "model_type": "EnsembleModel",
+  "model_type": "ensemble",
   "version": "2.0.0",
-  "target_columns": ["verbal_coercion", "constraint", ...],
+  "target_columns": ["teargas", "rubberbullets", "liveammo",
+    "sticks", "surround", "cleararea", "policerepress"],
   "feature_columns": ["country", "governorate", ...],
   "is_loaded": true,
   "timestamp": "2026-01-26T12:00:00Z"
@@ -147,7 +185,7 @@ export default function DocsPage() {
         <div className="mb-8">
           <h2 className="text-2xl font-bold text-gray-900 mb-2">API Reference</h2>
           <p className="text-gray-600">
-            The Pro-Test API provides endpoints for predicting protest outcomes based on
+            The Pro-Test API provides endpoints for predicting protest repression methods based on
             historical data from Iraq, Lebanon, and Egypt.
           </p>
           <div className="mt-4 flex items-center gap-4">
@@ -241,9 +279,9 @@ export default function DocsPage() {
                 likelihood based on similar historical events, not certainty of outcomes.
               </li>
               <li>
-                <strong>Feature Dependencies:</strong> Some outcomes are correlated (e.g.,
-                security presence often precedes physical responses). Consider predictions
-                holistically.
+                <strong>Repression Methods:</strong> The model predicts specific repression methods
+                (tear gas, rubber bullets, etc.), not broader repression categories. Multiple methods
+                may be used simultaneously.
               </li>
               <li>
                 <strong>Intended Use:</strong> This tool is designed for research and risk
@@ -258,7 +296,7 @@ export default function DocsPage() {
       <footer className="bg-white border-t border-gray-200 mt-12">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <p className="text-sm text-gray-500 text-center">
-            Pro-Test v2.0 - Protest Outcome Prediction System
+            Pro-Test v2.0 - Predictive Modelling for a Safer Forum of Dissent
           </p>
         </div>
       </footer>

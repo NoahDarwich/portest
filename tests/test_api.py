@@ -114,13 +114,13 @@ class TestPredictEndpoint:
             predictions = data["predictions"]
 
             expected_outcomes = [
-                "verbal_coercion",
-                "constraint",
-                "physical_mild",
-                "physical_severe",
-                "physical_deadly",
-                "security_presence",
-                "militia_presence",
+                "teargas",
+                "rubberbullets",
+                "liveammo",
+                "sticks",
+                "surround",
+                "cleararea",
+                "policerepress",
             ]
 
             for outcome in expected_outcomes:
@@ -178,13 +178,13 @@ class TestModelInfoEndpoint:
         data = response.json()
 
         expected_targets = [
-            "verbal_coercion",
-            "constraint",
-            "physical_mild",
-            "physical_severe",
-            "physical_deadly",
-            "security_presence",
-            "militia_presence",
+            "teargas",
+            "rubberbullets",
+            "liveammo",
+            "sticks",
+            "surround",
+            "cleararea",
+            "policerepress",
         ]
 
         assert data["target_columns"] == expected_targets
