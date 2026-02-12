@@ -40,7 +40,11 @@ class Settings(BaseSettings):
     api_prefix: str = "/api/v2"
 
     # CORS settings
-    cors_origins: list[str] = ["http://localhost:3000", "http://localhost:8501"]
+    cors_origins: list[str] = [
+        "http://localhost:3000",
+        "http://localhost:8501",
+        "https://portest-umber.vercel.app",
+    ]
     cors_allow_credentials: bool = True
     cors_allow_methods: list[str] = ["GET", "POST", "OPTIONS"]
     cors_allow_headers: list[str] = ["*"]
