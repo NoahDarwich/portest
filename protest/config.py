@@ -12,6 +12,9 @@ from typing import Literal
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+# Project root: parent of the `protest/` package directory
+_PROJECT_ROOT = Path(__file__).resolve().parent.parent
+
 
 class Settings(BaseSettings):
     """Application settings loaded from environment variables."""
@@ -56,7 +59,7 @@ class Settings(BaseSettings):
     # ============================================================
     # Model Settings
     # ============================================================
-    model_path: Path = Path("models/ensemble_model.joblib")
+    model_path: Path = _PROJECT_ROOT / "models" / "ensemble_model.joblib"
     model_cache_enabled: bool = True
 
     @field_validator("model_path", mode="before")
@@ -82,7 +85,7 @@ class Settings(BaseSettings):
     # ============================================================
     # Data Settings
     # ============================================================
-    data_path: Path = Path("data")
+    data_path: Path = _PROJECT_ROOT / "data"
 
     # ============================================================
     # Frontend Settings (for Streamlit)
