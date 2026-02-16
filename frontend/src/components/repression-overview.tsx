@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { api, RepressionStatsResponse } from "@/lib/api";
+import { REPRESSION_SHORT_LABELS, REPRESSION_COLORS } from "@/lib/constants";
 import { Loader2 } from "lucide-react";
 import {
   BarChart,
@@ -13,33 +14,20 @@ import {
   Cell,
 } from "recharts";
 
-const SHORT_LABELS: Record<string, string> = {
-  "No known coercion, no security presence": "No coercion",
-  "Security forces or other repressive groups present at event": "Repressive groups present",
-  "Injuries inflicted": "Injuries",
-  "Physical harassment": "Physical harassment",
-  "Security forces present at event": "Security present",
-  "Deaths inflicted": "Deaths",
-  "Army present at event": "Army present",
-  "Arrests / detentions": "Arrests",
-  "Party Militias/ Baltagia present at event": "Militias present",
-  "Participants summoned to security facility": "Summoned to facility",
-};
+interface RepressionOverviewProps {
+  country?: string | null;
+}
 
-const COLORS = [
-  "#2563eb", "#3b82f6", "#60a5fa", "#93c5fd", "#bfdbfe",
-  "#dbeafe", "#e0f2fe", "#f0f9ff", "#f8fafc", "#f9fafb",
-];
-
-export function RepressionOverview() {
+export function RepressionOverview({ country }: RepressionOverviewProps) {
   const [data, setData] = useState<RepressionStatsResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     async function loadData() {
+      setLoading(true);
       try {
-        const stats = await api.getRepressionStats();
+        const stats = await api.getRepressionStats(country || undefined);
         setData(stats);
         setError(null);
       } catch (err) {
@@ -49,16 +37,18 @@ export function RepressionOverview() {
       }
     }
     loadData();
-  }, []);
+  }, [country]);
+
+  const title = country
+    ? `Historical Repression - ${country} (2017-2022)`
+    : "Historical Repression Patterns (2017-2022)";
 
   if (loading) {
     return (
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
-        <h3 className="text-sm font-semibold text-gray-900 mb-4">
-          Historical Repression Patterns (2017-2022)
-        </h3>
+      <div>
+        <h3 className="text-xs font-medium text-gray-400 mb-4">{title}</h3>
         <div className="flex items-center justify-center py-8">
-          <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
+          <Loader2 className="h-5 w-5 animate-spin text-gray-600" />
         </div>
       </div>
     );
@@ -66,32 +56,28 @@ export function RepressionOverview() {
 
   if (error || !data) {
     return (
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
-        <h3 className="text-sm font-semibold text-gray-900 mb-4">
-          Historical Repression Patterns (2017-2022)
-        </h3>
-        <p className="text-sm text-gray-500 text-center py-4">{error || "No data available"}</p>
+      <div>
+        <h3 className="text-xs font-medium text-gray-400 mb-4">{title}</h3>
+        <p className="text-sm text-gray-600 text-center py-4">{error || "No data available"}</p>
       </div>
     );
   }
 
   const chartData = Object.entries(data.counts)
     .map(([name, count]) => ({
-      name: SHORT_LABELS[name] || name,
+      name: REPRESSION_SHORT_LABELS[name] || name,
       count,
       pct: Math.round((count / data.total) * 1000) / 10,
     }))
     .sort((a, b) => b.count - a.count);
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-6">
-      <h3 className="text-sm font-semibold text-gray-900 mb-1">
-        Historical Repression Patterns (2017-2022)
-      </h3>
-      <p className="text-xs text-gray-500 mb-4">
-        Distribution of {data.total.toLocaleString()} documented events - for context, not predictions
+    <div>
+      <h3 className="text-xs font-medium text-gray-400 mb-1">{title}</h3>
+      <p className="text-[10px] text-gray-600 mb-3">
+        Distribution of {data.total.toLocaleString()} documented events
       </p>
-      <div className="h-[300px] w-full">
+      <div className="h-[280px] w-full">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart
             data={chartData}
@@ -101,29 +87,35 @@ export function RepressionOverview() {
             <XAxis
               type="number"
               tickFormatter={(v) => `${v}%`}
-              fontSize={11}
+              fontSize={10}
               tickLine={false}
+              stroke="#525252"
+              tick={{ fill: "#737373" }}
             />
             <YAxis
               type="category"
               dataKey="name"
               width={150}
-              fontSize={11}
+              fontSize={10}
               tickLine={false}
               axisLine={false}
+              tick={{ fill: "#a1a1aa" }}
             />
             <Tooltip
               formatter={(value) => [`${value}%`, "Frequency"]}
               contentStyle={{
-                backgroundColor: "white",
-                border: "1px solid #e5e7eb",
+                backgroundColor: "#1c1e26",
+                border: "1px solid rgba(255,255,255,0.1)",
                 borderRadius: "6px",
-                fontSize: "12px",
+                fontSize: "11px",
+                color: "#e4e4e7",
               }}
+              itemStyle={{ color: "#e4e4e7" }}
+              labelStyle={{ color: "#a1a1aa" }}
             />
             <Bar dataKey="pct" radius={[0, 4, 4, 0]}>
               {chartData.map((_, index) => (
-                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                <Cell key={`cell-${index}`} fill={REPRESSION_COLORS[index % REPRESSION_COLORS.length]} />
               ))}
             </Bar>
           </BarChart>

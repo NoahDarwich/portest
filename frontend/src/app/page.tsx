@@ -1,36 +1,34 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { SidebarForm } from "@/components/sidebar-form";
 import { ProtestMap } from "@/components/protest-map";
-import { MethodsChart } from "@/components/methods-chart";
-import { RepressionOverview } from "@/components/repression-overview";
+import { OverlayPanels } from "@/components/bottom-panel";
 import { api, PredictionInput, PredictionResponse, HealthResponse } from "@/lib/api";
-import { AlertTriangle, CheckCircle, Shield, Brain, Book, HelpCircle } from "lucide-react";
+import { AlertTriangle, CheckCircle, HelpCircle, Brain } from "lucide-react";
 import Link from "next/link";
 
 function HealthBadge({ health, error }: { health: HealthResponse | null; error: boolean }) {
   if (error) {
     return (
-      <span className="flex items-center gap-1 text-xs font-medium text-red-600 bg-red-50 px-2 py-1 rounded">
+      <span className="flex items-center gap-1 text-[10px] font-medium text-red-400 bg-red-500/10 px-2 py-0.5 rounded">
         <AlertTriangle className="h-3 w-3" />
-        API Offline
+        Offline
       </span>
     );
   }
 
   if (!health) {
     return (
-      <span className="flex items-center gap-1 text-xs font-medium text-gray-500 bg-gray-100 px-2 py-1 rounded">
+      <span className="flex items-center gap-1 text-[10px] font-medium text-gray-500 bg-white/5 px-2 py-0.5 rounded">
         Connecting...
       </span>
     );
   }
 
   return (
-    <span className="flex items-center gap-1 text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded">
+    <span className="flex items-center gap-1 text-[10px] font-medium text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded">
       <CheckCircle className="h-3 w-3" />
-      {health.model_loaded ? "Model Ready" : "Model Loading"}
+      {health.model_loaded ? "Ready" : "Loading"}
     </span>
   );
 }
@@ -41,6 +39,7 @@ export default function Home() {
   const [results, setResults] = useState<PredictionResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [selectedCountry, setSelectedCountry] = useState<string | null>(null);
 
   useEffect(() => {
     async function checkHealth() {
@@ -74,111 +73,46 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="h-screen w-screen overflow-hidden bg-[#0f1117] relative">
       {/* Header */}
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
-        <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-14">
-            <div className="flex items-center gap-3">
-              <Shield className="h-7 w-7 text-blue-600" />
-              <div>
-                <h1 className="text-lg font-bold text-gray-900 leading-tight">Pro-Test</h1>
-                <p className="text-[10px] text-gray-500 leading-tight">
-                  Predictive Modelling for a Safer Forum of Dissent
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center gap-4">
-              <Link
-                href="/about"
-                className="hidden sm:flex items-center gap-1 text-sm text-gray-600 hover:text-gray-900"
-              >
-                <HelpCircle className="h-4 w-4" />
-                Guide
-              </Link>
-              <Link
-                href="/docs"
-                className="hidden sm:flex items-center gap-1 text-sm text-gray-600 hover:text-gray-900"
-              >
-                <Book className="h-4 w-4" />
-                API Docs
-              </Link>
-              <Link
-                href="/model"
-                className="hidden sm:flex items-center gap-1 text-sm text-gray-600 hover:text-gray-900"
-              >
-                <Brain className="h-4 w-4" />
-                Model
-              </Link>
-              <HealthBadge health={health} error={healthError} />
-            </div>
-          </div>
+      <header className="absolute top-0 left-0 right-0 z-[1002] h-12 flex items-center justify-between px-4" style={{ background: "rgba(15, 17, 23, 0.7)", backdropFilter: "blur(12px)", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+        <div className="flex items-center gap-2">
+          <h1 className="text-base font-bold text-white tracking-tight">PRO-TEST</h1>
+          <span className="hidden sm:inline text-[10px] text-gray-600 font-mono">v2.0</span>
+        </div>
+        <div className="flex items-center gap-3">
+          <Link href="/about" className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-300 transition-colors">
+            <HelpCircle className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">Guide</span>
+          </Link>
+          <Link href="/model" className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-300 transition-colors">
+            <Brain className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">Model</span>
+          </Link>
+          <HealthBadge health={health} error={healthError} />
         </div>
       </header>
 
-      {/* Main Layout: Sidebar + Content */}
-      <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <div className="flex flex-col lg:flex-row gap-6">
-          {/* Sidebar */}
-          <aside className="w-full lg:w-[320px] flex-shrink-0">
-            <div className="bg-white rounded-lg border border-gray-200 p-5 sticky top-20">
-              <h2 className="text-sm font-semibold text-gray-900 mb-1">Protest Parameters</h2>
-              <p className="text-xs text-gray-500 mb-4">
-                Configure protest characteristics to predict outcomes
-              </p>
-              <SidebarForm onPredict={handlePredict} isLoading={isLoading} />
-            </div>
-          </aside>
-
-          {/* Main Content */}
-          <main className="flex-1 min-w-0 space-y-6">
-            {/* Error Banner */}
-            {error && (
-              <div className="p-4 bg-red-50 border border-red-200 rounded-lg flex items-center gap-3">
-                <AlertTriangle className="h-5 w-5 text-red-600 flex-shrink-0" />
-                <div>
-                  <p className="font-medium text-red-800">Prediction Error</p>
-                  <p className="text-sm text-red-600">{error}</p>
-                </div>
-              </div>
-            )}
-
-            {/* Density Heatmap */}
-            <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-              <div className="px-6 py-4 border-b border-gray-100">
-                <h3 className="text-sm font-semibold text-gray-900">Protest Density Map</h3>
-                <p className="text-xs text-gray-500">
-                  Heatmap of documented protests across Iraq, Lebanon, and Egypt (2017-2022)
-                </p>
-              </div>
-              <div className="h-[450px] sm:h-[500px]">
-                <ProtestMap />
-              </div>
-            </div>
-
-            {/* Charts Row */}
-            <div className="grid gap-6 xl:grid-cols-2">
-              <MethodsChart results={results} />
-              <RepressionOverview />
-            </div>
-          </main>
+      {/* Error Banner */}
+      {error && (
+        <div className="absolute top-[104px] left-0 right-0 z-[1003] px-4 py-2 bg-red-500/10 backdrop-blur-sm border-b border-red-500/20 flex items-center gap-2 text-xs text-red-400">
+          <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0" />
+          {error}
         </div>
+      )}
+
+      {/* Map — fills entire viewport */}
+      <div className="absolute inset-0">
+        <ProtestMap onCountrySelect={setSelectedCountry} />
       </div>
 
-      {/* Footer */}
-      <footer className="bg-white border-t border-gray-200 mt-8">
-        <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-5">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 text-sm text-gray-500">
-            <p>Pro-Test v2.0 - Predictive Modelling for a Safer Forum of Dissent</p>
-            {health && (
-              <p>
-                API v{health.version} | {health.environment}
-                {health.cache_enabled && " | Cache enabled"}
-              </p>
-            )}
-          </div>
-        </div>
-      </footer>
+      {/* Tab bar + panels */}
+      <OverlayPanels
+        results={results}
+        isLoading={isLoading}
+        onPredict={handlePredict}
+        selectedCountry={selectedCountry}
+      />
     </div>
   );
 }

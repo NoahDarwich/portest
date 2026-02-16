@@ -1,6 +1,7 @@
 "use client";
 
 import { PredictionResponse } from "@/lib/api";
+import { METHOD_LABELS, getBarColor } from "@/lib/constants";
 import { Shield } from "lucide-react";
 import {
   BarChart,
@@ -12,24 +13,6 @@ import {
   Cell,
 } from "recharts";
 
-const METHOD_LABELS: Record<string, string> = {
-  teargas: "Tear Gas",
-  rubberbullets: "Rubber Bullets",
-  liveammo: "Live Ammo",
-  sticks: "Sticks/Batons",
-  surround: "Surround",
-  cleararea: "Area Cleared",
-  policerepress: "Police Repression",
-};
-
-function getBarColor(probability: number): string {
-  if (probability >= 0.7) return "#bd0026";
-  if (probability >= 0.5) return "#f03b20";
-  if (probability >= 0.3) return "#fd8d3c";
-  if (probability >= 0.15) return "#fecc5c";
-  return "#ffffb2";
-}
-
 interface MethodsChartProps {
   results: PredictionResponse | null;
 }
@@ -37,12 +20,9 @@ interface MethodsChartProps {
 export function MethodsChart({ results }: MethodsChartProps) {
   if (!results) {
     return (
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
-        <h3 className="text-sm font-semibold text-gray-900 mb-4">Predicted Repression Methods</h3>
-        <div className="flex flex-col items-center justify-center py-8 text-gray-400">
-          <Shield className="h-10 w-10 mb-3" />
-          <p className="text-sm">Submit the form to see predictions</p>
-        </div>
+      <div className="flex flex-col items-center justify-center py-6 text-gray-600">
+        <Shield className="h-8 w-8 mb-2 opacity-40" />
+        <p className="text-xs">Submit the form to see predictions</p>
       </div>
     );
   }
@@ -56,14 +36,14 @@ export function MethodsChart({ results }: MethodsChartProps) {
     .sort((a, b) => b.probability - a.probability);
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-6">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-sm font-semibold text-gray-900">Predicted Repression Methods</h3>
+    <div>
+      <div className="flex items-center justify-between mb-2">
+        <h3 className="text-xs font-medium text-gray-400">Predicted Repression Methods</h3>
         {results.cached && (
-          <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded">cached</span>
+          <span className="text-[10px] bg-white/5 text-gray-500 px-1.5 py-0.5 rounded">cached</span>
         )}
       </div>
-      <div className="h-[280px] w-full">
+      <div className="h-[250px] w-full">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart
             data={chartData}
@@ -74,25 +54,31 @@ export function MethodsChart({ results }: MethodsChartProps) {
               type="number"
               domain={[0, 100]}
               tickFormatter={(v) => `${v}%`}
-              fontSize={11}
+              fontSize={10}
               tickLine={false}
+              stroke="#525252"
+              tick={{ fill: "#737373" }}
             />
             <YAxis
               type="category"
               dataKey="name"
               width={110}
-              fontSize={12}
+              fontSize={11}
               tickLine={false}
               axisLine={false}
+              tick={{ fill: "#a1a1aa" }}
             />
             <Tooltip
               formatter={(value) => [`${value}%`, "Probability"]}
               contentStyle={{
-                backgroundColor: "white",
-                border: "1px solid #e5e7eb",
+                backgroundColor: "#1c1e26",
+                border: "1px solid rgba(255,255,255,0.1)",
                 borderRadius: "6px",
-                fontSize: "12px",
+                fontSize: "11px",
+                color: "#e4e4e7",
               }}
+              itemStyle={{ color: "#e4e4e7" }}
+              labelStyle={{ color: "#a1a1aa" }}
             />
             <Bar dataKey="probability" radius={[0, 4, 4, 0]}>
               {chartData.map((entry, index) => (
@@ -102,9 +88,6 @@ export function MethodsChart({ results }: MethodsChartProps) {
           </BarChart>
         </ResponsiveContainer>
       </div>
-      <p className="text-xs text-gray-400 text-center mt-2">
-        Predicted probability of each repression method being used
-      </p>
     </div>
   );
 }

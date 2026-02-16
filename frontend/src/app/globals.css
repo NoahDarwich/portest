@@ -1,8 +1,8 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #0f1117;
+  --foreground: #e4e4e7;
 }
 
 @theme inline {
@@ -12,15 +12,69 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Frosted glass overlay */
+.glass {
+  background: rgba(15, 17, 23, 0.75);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* Bottom panel transitions */
+.bottom-panel {
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+              max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.bottom-panel.collapsed {
+  max-height: 40px;
+}
+
+.bottom-panel.expanded {
+  max-height: 420px;
+}
+
+/* Leaflet overrides for dark theme */
+.leaflet-container {
+  background: #0f1117 !important;
+}
+
+.leaflet-control-zoom a {
+  background: rgba(15, 17, 23, 0.85) !important;
+  color: #e4e4e7 !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+.leaflet-control-zoom a:hover {
+  background: rgba(30, 33, 43, 0.95) !important;
+}
+
+.leaflet-control-attribution {
+  background: rgba(15, 17, 23, 0.7) !important;
+  color: rgba(228, 228, 231, 0.5) !important;
+  font-size: 10px !important;
+}
+
+.leaflet-control-attribution a {
+  color: rgba(228, 228, 231, 0.6) !important;
+}
+
+/* Custom scrollbar for bottom panel */
+.bottom-panel-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.bottom-panel-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.bottom-panel-content::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 3px;
 }

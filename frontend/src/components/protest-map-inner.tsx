@@ -1,11 +1,22 @@
 "use client";
 
-import { useEffect } from "react";
-import { MapContainer, TileLayer, useMap } from "react-leaflet";
+import { useEffect, useState, useCallback } from "react";
+import { MapContainer, TileLayer, CircleMarker, Popup, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import "leaflet.heat";
 import type { MapDataPoint } from "@/lib/api";
+import { REPRESSION_COLORS, REPRESSION_SHORT_LABELS } from "@/lib/constants";
+
+const REPRESSION_COLOR_MAP: Record<string, string> = {};
+const repressionKeys = Object.keys(REPRESSION_SHORT_LABELS);
+repressionKeys.forEach((key, i) => {
+  REPRESSION_COLOR_MAP[key] = REPRESSION_COLORS[i % REPRESSION_COLORS.length];
+});
+
+function getRepressionColor(repression: string): string {
+  return REPRESSION_COLOR_MAP[repression] || "#94a3b8";
+}
 
 function HeatmapLayer({ points }: { points: MapDataPoint[] }) {
   const map = useMap();
@@ -41,23 +52,81 @@ function HeatmapLayer({ points }: { points: MapDataPoint[] }) {
   return null;
 }
 
+function ZoomAwareMarkers({ points }: { points: MapDataPoint[] }) {
+  const map = useMap();
+  const [zoom, setZoom] = useState(map.getZoom());
+
+  useEffect(() => {
+    const onZoom = () => setZoom(map.getZoom());
+    map.on("zoomend", onZoom);
+    return () => {
+      map.off("zoomend", onZoom);
+    };
+  }, [map]);
+
+  if (zoom < 8 || !points.length) return null;
+
+  return (
+    <>
+      {points.map((p, i) => (
+        <CircleMarker
+          key={i}
+          center={[p.lat, p.lng]}
+          radius={5}
+          pathOptions={{
+            fillColor: getRepressionColor(p.repression),
+            fillOpacity: 0.8,
+            color: "rgba(255,255,255,0.3)",
+            weight: 1,
+          }}
+        >
+          <Popup>
+            <div className="text-xs leading-relaxed">
+              <div className="font-semibold text-gray-900">{p.country}</div>
+              <div className="text-gray-600">
+                {REPRESSION_SHORT_LABELS[p.repression] || p.repression}
+              </div>
+              <div className="text-gray-500">
+                {p.violence_heat > 0 ? "Violent" : "Non-violent"}
+              </div>
+            </div>
+          </Popup>
+        </CircleMarker>
+      ))}
+    </>
+  );
+}
+
 interface ProtestMapInnerProps {
   points: MapDataPoint[];
 }
 
 export default function ProtestMapInner({ points }: ProtestMapInnerProps) {
+  const [mapReady, setMapReady] = useState(false);
+
+  const handleMapReady = useCallback(() => {
+    setMapReady(true);
+  }, []);
+
   return (
     <MapContainer
       center={[30.5852, 36.2384]}
-      zoom={4}
-      style={{ height: "100%", width: "100%", borderRadius: "0.5rem" }}
+      zoom={5}
+      style={{ height: "100%", width: "100%" }}
       scrollWheelZoom={true}
+      zoomControl={true}
+      whenReady={handleMapReady}
     >
       <TileLayer
         attribution='&copy; <a href="https://carto.com/">CARTO</a>'
-        url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
+        url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
       />
-      <HeatmapLayer points={points} />
+      {mapReady && (
+        <>
+          <HeatmapLayer points={points} />
+          <ZoomAwareMarkers points={points} />
+        </>
+      )}
     </MapContainer>
   );
 }

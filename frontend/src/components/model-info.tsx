@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { api, ModelInfoResponse } from "@/lib/api";
 import { Brain, CheckCircle, XCircle, Loader2, Database, Target } from "lucide-react";
 
@@ -27,22 +26,18 @@ export function ModelInfo() {
 
   if (loading) {
     return (
-      <Card>
-        <CardContent className="flex items-center justify-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
-        </CardContent>
-      </Card>
+      <div className="rounded-lg border border-white/10 bg-white/[0.02] p-6 flex items-center justify-center py-12">
+        <Loader2 className="h-6 w-6 animate-spin text-gray-600" />
+      </div>
     );
   }
 
   if (error) {
     return (
-      <Card>
-        <CardContent className="py-12 text-center">
-          <Brain className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-          <p className="text-gray-500">{error}</p>
-        </CardContent>
-      </Card>
+      <div className="rounded-lg border border-white/10 bg-white/[0.02] p-6 text-center py-12">
+        <Brain className="h-10 w-10 mx-auto mb-3 text-gray-700" />
+        <p className="text-sm text-gray-500">{error}</p>
+      </div>
     );
   }
 
@@ -52,36 +47,35 @@ export function ModelInfo() {
     name.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Brain className="h-5 w-5" />
+    <div className="rounded-lg border border-white/10 bg-white/[0.02] p-5">
+      <div className="mb-4">
+        <h3 className="flex items-center gap-2 text-sm font-semibold text-white">
+          <Brain className="h-4 w-4 text-gray-400" />
           Model Information
-        </CardTitle>
-        <CardDescription>
-          Details about the prediction model
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        {/* Status Row */}
-        <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-          <div className="flex items-center gap-3">
-            <div className={`p-2 rounded-full ${data.is_loaded ? "bg-green-100" : "bg-red-100"}`}>
+        </h3>
+        <p className="text-xs text-gray-500 mt-0.5">Details about the prediction model</p>
+      </div>
+
+      <div className="space-y-5">
+        {/* Status */}
+        <div className="flex items-center justify-between p-3 bg-white/[0.03] rounded-lg border border-white/5">
+          <div className="flex items-center gap-2.5">
+            <div className={`p-1.5 rounded-full ${data.is_loaded ? "bg-emerald-500/10" : "bg-red-500/10"}`}>
               {data.is_loaded ? (
-                <CheckCircle className="h-5 w-5 text-green-600" />
+                <CheckCircle className="h-4 w-4 text-emerald-400" />
               ) : (
-                <XCircle className="h-5 w-5 text-red-600" />
+                <XCircle className="h-4 w-4 text-red-400" />
               )}
             </div>
             <div>
-              <p className="font-medium">{data.model_type}</p>
-              <p className="text-sm text-gray-500">Version {data.version}</p>
+              <p className="text-sm font-medium text-gray-200">{data.model_type}</p>
+              <p className="text-[10px] text-gray-500">Version {data.version}</p>
             </div>
           </div>
-          <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+          <span className={`px-2 py-0.5 rounded text-[10px] font-medium ${
             data.is_loaded
-              ? "bg-green-100 text-green-700"
-              : "bg-red-100 text-red-700"
+              ? "bg-emerald-500/10 text-emerald-400"
+              : "bg-red-500/10 text-red-400"
           }`}>
             {data.is_loaded ? "Active" : "Not Loaded"}
           </span>
@@ -89,16 +83,13 @@ export function ModelInfo() {
 
         {/* Target Outcomes */}
         <div>
-          <div className="flex items-center gap-2 mb-3">
-            <Target className="h-4 w-4 text-gray-500" />
-            <h4 className="font-medium text-sm">Predicted Outcomes ({data.target_columns.length})</h4>
+          <div className="flex items-center gap-1.5 mb-2">
+            <Target className="h-3.5 w-3.5 text-gray-500" />
+            <h4 className="text-xs font-medium text-gray-400">Predicted Outcomes ({data.target_columns.length})</h4>
           </div>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-1.5">
             {data.target_columns.map((col) => (
-              <span
-                key={col}
-                className="px-2 py-1 bg-blue-50 text-blue-700 text-xs rounded-md"
-              >
+              <span key={col} className="px-2 py-0.5 bg-blue-500/10 text-blue-400 text-[10px] rounded">
                 {formatColumnName(col)}
               </span>
             ))}
@@ -107,27 +98,24 @@ export function ModelInfo() {
 
         {/* Input Features */}
         <div>
-          <div className="flex items-center gap-2 mb-3">
-            <Database className="h-4 w-4 text-gray-500" />
-            <h4 className="font-medium text-sm">Input Features ({data.feature_columns.length})</h4>
+          <div className="flex items-center gap-1.5 mb-2">
+            <Database className="h-3.5 w-3.5 text-gray-500" />
+            <h4 className="text-xs font-medium text-gray-400">Input Features ({data.feature_columns.length})</h4>
           </div>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-1.5">
             {data.feature_columns.slice(0, 12).map((col) => (
-              <span
-                key={col}
-                className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-md"
-              >
+              <span key={col} className="px-2 py-0.5 bg-white/5 text-gray-400 text-[10px] rounded">
                 {formatColumnName(col)}
               </span>
             ))}
             {data.feature_columns.length > 12 && (
-              <span className="px-2 py-1 bg-gray-100 text-gray-500 text-xs rounded-md">
+              <span className="px-2 py-0.5 bg-white/5 text-gray-600 text-[10px] rounded">
                 +{data.feature_columns.length - 12} more
               </span>
             )}
           </div>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }
