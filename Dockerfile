@@ -43,6 +43,8 @@ COPY --from=dependencies /usr/local/bin /usr/local/bin
 # Copy application code
 COPY protest/ ./protest/
 COPY api/ ./api/
+COPY models/ ./models/
+COPY data/ ./data/
 
 # Create non-root user for security
 RUN useradd --create-home --shell /bin/bash appuser && \
