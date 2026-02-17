@@ -21,28 +21,29 @@ export const REPRESSION_SHORT_LABELS: Record<string, string> = {
   "Participants summoned to security facility": "Summoned to facility",
 };
 
-// Categorical colors for repression type view
+// Muted categorical colors for repression type view — softer against dark bg
 export const REPRESSION_COLORS: string[] = [
-  "#e63946", // red
-  "#f4a261", // orange
-  "#e9c46a", // gold
-  "#2a9d8f", // teal
-  "#264653", // dark blue
-  "#a8dadc", // light teal
-  "#457b9d", // steel blue
-  "#6d6875", // purple gray
-  "#b5838d", // mauve
-  "#ffb4a2", // peach
+  "#8b9dc3", // muted steel blue — no coercion
+  "#7eb8a4", // sage green — repressive groups
+  "#c97b7b", // dusty rose — injuries
+  "#d4a87c", // warm sand — harassment
+  "#6fa8c9", // soft sky blue — security present
+  "#b07090", // muted plum — deaths
+  "#9bb07a", // olive — army
+  "#c4956a", // terracotta — arrests
+  "#8a8ab0", // lavender gray — militias
+  "#79b5a2", // seafoam — summoned
 ];
 
-// Severity gradient: 0 (none) to 5 (deaths)
+// Severity gradient: muted tones that feel intuitive
+// 0 = calm/neutral → 5 = danger
 export const SEVERITY_COLORS: Record<number, string> = {
-  0: "#4b5563", // gray — no coercion
-  1: "#3b82f6", // blue — security present
-  2: "#eab308", // yellow — army / summoned
-  3: "#f97316", // orange — harassment / arrests / militias
-  4: "#ef4444", // red — injuries
-  5: "#991b1b", // dark red — deaths
+  0: "#6b7280", // neutral gray — no coercion
+  1: "#7eb8a4", // sage green — security present (calm)
+  2: "#d4a87c", // warm sand — escalated (caution)
+  3: "#c98a5a", // amber — force used (warning)
+  4: "#c97b7b", // dusty rose — injuries (serious)
+  5: "#a35555", // muted crimson — deaths (severe)
 };
 
 export const SEVERITY_LABELS: Record<number, string> = {
@@ -57,9 +58,9 @@ export const SEVERITY_LABELS: Record<number, string> = {
 export const COUNTRIES = ["Iraq", "Lebanon", "Egypt"] as const;
 
 export function getBarColor(probability: number): string {
-  if (probability >= 0.7) return "#bd0026";
-  if (probability >= 0.5) return "#f03b20";
-  if (probability >= 0.3) return "#fd8d3c";
-  if (probability >= 0.15) return "#fecc5c";
-  return "#ffffb2";
+  if (probability >= 0.7) return "#a35555";
+  if (probability >= 0.5) return "#c97b7b";
+  if (probability >= 0.3) return "#c98a5a";
+  if (probability >= 0.15) return "#d4a87c";
+  return "#7eb8a4";
 }

@@ -40,19 +40,19 @@ function HeatmapLayer({ points, colorMode }: { points: MapDataPoint[]; colorMode
     const gradient: Record<number, string> =
       colorMode === "severity"
         ? {
-            0: "#4b5563",
-            0.25: "#3b82f6",
-            0.45: "#eab308",
-            0.65: "#f97316",
-            0.85: "#ef4444",
-            1: "#991b1b",
+            0: "#6b7280",
+            0.2: "#7eb8a4",
+            0.4: "#d4a87c",
+            0.6: "#c98a5a",
+            0.8: "#c97b7b",
+            1: "#a35555",
           }
         : {
-            0.2: "#ffffb2",
-            0.4: "#fecc5c",
-            0.6: "#fd8d3c",
-            0.8: "#f03b20",
-            1: "#bd0026",
+            0.2: "#7eb8a4",
+            0.4: "#d4a87c",
+            0.6: "#c98a5a",
+            0.8: "#c97b7b",
+            1: "#a35555",
           };
 
     const heat = L.heatLayer(heatData, {
@@ -100,20 +100,20 @@ function ZoomAwareMarkers({ points, colorMode }: { points: MapDataPoint[]; color
           }}
         >
           <Popup>
-            <div className="text-xs leading-relaxed min-w-[140px]">
-              <div className="font-semibold text-gray-900">{p.country}</div>
-              <div className="text-gray-600">
+            <div className="text-sm leading-relaxed min-w-[180px]">
+              <div className="font-semibold text-gray-900 text-base">{p.country}</div>
+              <div className="text-gray-600 mt-0.5">
                 {REPRESSION_SHORT_LABELS[p.repression] || p.repression}
               </div>
               {p.demand && (
-                <div className="text-gray-500">Demand: {p.demand}</div>
+                <div className="text-gray-500 mt-0.5">Demand: {p.demand}</div>
               )}
               {p.tactic && (
                 <div className="text-gray-500">Tactic: {p.tactic}</div>
               )}
-              <div className="mt-1 flex items-center gap-1">
+              <div className="mt-1.5 flex items-center gap-1.5">
                 <span
-                  className="w-2 h-2 rounded-full inline-block"
+                  className="w-2.5 h-2.5 rounded-full inline-block"
                   style={{ backgroundColor: SEVERITY_COLORS[p.severity] }}
                 />
                 <span className="text-gray-500">

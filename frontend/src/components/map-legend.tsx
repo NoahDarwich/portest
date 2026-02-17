@@ -18,26 +18,26 @@ export function MapLegend({ repressionCounts, filters }: MapLegendProps) {
   if (sortedEntries.length === 0) return null;
 
   return (
-    <div className="absolute bottom-3 left-3 z-[1000] glass rounded-lg p-2.5 max-w-[200px]">
-      <div className="text-[10px] text-gray-500 uppercase tracking-wider mb-1.5">Repression Type</div>
-      <div className="space-y-0.5">
+    <div className="absolute bottom-3 left-3 z-[1000] glass rounded-lg p-3 max-w-[240px]">
+      <div className="text-xs text-gray-500 uppercase tracking-wider mb-2 font-medium">Repression Type</div>
+      <div className="space-y-1">
         {sortedEntries.map((key, i) => {
           const isFiltered = filters.repressionTypes.length > 0 && !filters.repressionTypes.includes(key);
           return (
             <div
               key={key}
-              className={`flex items-center gap-1.5 w-full transition-opacity ${
+              className={`flex items-center gap-2 w-full transition-opacity ${
                 isFiltered ? "opacity-30" : "opacity-100"
               }`}
             >
               <span
-                className="w-2.5 h-2.5 rounded-sm flex-shrink-0"
+                className="w-3 h-3 rounded-sm flex-shrink-0"
                 style={{ backgroundColor: REPRESSION_COLORS[i % REPRESSION_COLORS.length] }}
               />
-              <span className="text-[10px] text-gray-400 truncate flex-1">
+              <span className="text-xs text-gray-400 truncate flex-1">
                 {REPRESSION_SHORT_LABELS[key]}
               </span>
-              <span className="text-[9px] text-gray-600 tabular-nums">
+              <span className="text-xs text-gray-600 tabular-nums">
                 {(repressionCounts[key] || 0).toLocaleString()}
               </span>
             </div>

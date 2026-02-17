@@ -23,11 +23,11 @@ export function PredictionPanel({
   return (
     <div className="flex flex-col">
       {/* Tab label */}
-      <div className="px-6 pt-4 pb-2">
-        <h2 className="text-sm font-bold text-gray-200 tracking-tight">
+      <div className="px-8 pt-6 pb-3">
+        <h2 className="text-lg font-bold text-gray-200 tracking-tight">
           {activeTab === "predict" ? "Predict Repression Outcome" : "Historical Analysis"}
         </h2>
-        <p className="text-[11px] text-gray-500 mt-0.5">
+        <p className="text-sm text-gray-500 mt-1">
           {activeTab === "predict"
             ? "Configure protest parameters and predict likely repression methods using the ensemble ML model."
             : "Explore historical repression patterns across countries and time periods."}
@@ -35,22 +35,22 @@ export function PredictionPanel({
       </div>
 
       <div
-        className="overflow-y-auto px-6 pb-5"
+        className="overflow-y-auto px-8 pb-6"
         style={{ scrollbarWidth: "thin", scrollbarColor: "rgba(255,255,255,0.15) transparent" }}
       >
         {activeTab === "predict" && (
-          <div className="grid grid-cols-2 gap-5">
+          <div className="grid grid-cols-2 gap-6">
             {/* Left: Form */}
-            <div className="rounded-xl bg-white/[0.03] border border-white/[0.06] p-5">
-              <h3 className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-4">
+            <div className="rounded-xl bg-white/[0.03] border border-white/[0.06] p-6">
+              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-5">
                 Protest Parameters
               </h3>
               <PredictionFormCompact onPredict={onPredict} isLoading={isLoading} />
             </div>
 
             {/* Right: Results */}
-            <div className="rounded-xl bg-white/[0.03] border border-white/[0.06] p-5">
-              <h3 className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-4">
+            <div className="rounded-xl bg-white/[0.03] border border-white/[0.06] p-6">
+              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-5">
                 Prediction Results
               </h3>
               <MethodsChart results={results} />
@@ -59,7 +59,7 @@ export function PredictionPanel({
         )}
 
         {activeTab === "historical" && (
-          <div className="rounded-xl bg-white/[0.03] border border-white/[0.06] p-5">
+          <div className="rounded-xl bg-white/[0.03] border border-white/[0.06] p-6">
             <RepressionOverview country={selectedCountry} />
           </div>
         )}

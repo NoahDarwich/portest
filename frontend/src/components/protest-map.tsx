@@ -94,7 +94,7 @@ export function ProtestMap({ filters, onAvailableFiltersReady }: ProtestMapProps
             />
           )}
 
-          <div className="absolute bottom-3 right-3 glass px-3 py-1.5 rounded-md text-xs text-gray-300 z-[1000]">
+          <div className="absolute bottom-3 right-3 glass px-3.5 py-2 rounded-lg text-sm text-gray-300 z-[1000]">
             {filteredPoints.length.toLocaleString()} events
             {filteredPoints.length !== points.length && (
               <span className="text-gray-500"> / {points.length.toLocaleString()}</span>
