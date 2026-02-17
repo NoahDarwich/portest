@@ -1,11 +1,17 @@
+export type ColorMode = "type" | "severity";
+
 export interface MapFilters {
   countries: string[];
   repressionTypes: string[];
-  violentOnly: boolean;
+  demandTypes: string[];
+  tactics: string[];
+  colorMode: ColorMode;
 }
 
 export const DEFAULT_FILTERS: MapFilters = {
   countries: [],
   repressionTypes: [],
-  violentOnly: false,
+  demandTypes: [],
+  tactics: [],
+  colorMode: "severity",
 };

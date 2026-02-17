@@ -26,20 +26,6 @@ body {
   border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-/* Bottom panel transitions */
-.bottom-panel {
-  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
-              max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.bottom-panel.collapsed {
-  max-height: 40px;
-}
-
-.bottom-panel.expanded {
-  max-height: 420px;
-}
-
 /* Leaflet overrides for dark theme */
 .leaflet-container {
   background: #0f1117 !important;
@@ -65,16 +51,20 @@ body {
   color: rgba(228, 228, 231, 0.6) !important;
 }
 
-/* Custom scrollbar for bottom panel */
-.bottom-panel-content::-webkit-scrollbar {
-  width: 6px;
+/* Curtain drop-down animation */
+@keyframes curtain-down {
+  from {
+    max-height: 0;
+    opacity: 0;
+  }
+  to {
+    max-height: 80vh;
+    opacity: 1;
+  }
 }
 
-.bottom-panel-content::-webkit-scrollbar-track {
-  background: transparent;
+.curtain-panel {
+  animation: curtain-down 0.35s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  overflow: hidden;
 }
 
-.bottom-panel-content::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.15);
-  border-radius: 3px;
-}

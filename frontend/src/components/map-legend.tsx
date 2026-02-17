@@ -6,10 +6,9 @@ import { MapFilters } from "@/lib/types";
 interface MapLegendProps {
   repressionCounts: Record<string, number>;
   filters: MapFilters;
-  onToggleRepression: (type: string) => void;
 }
 
-export function MapLegend({ repressionCounts, filters, onToggleRepression }: MapLegendProps) {
+export function MapLegend({ repressionCounts, filters }: MapLegendProps) {
   const repressionKeys = Object.keys(REPRESSION_SHORT_LABELS);
 
   const sortedEntries = repressionKeys
@@ -25,10 +24,9 @@ export function MapLegend({ repressionCounts, filters, onToggleRepression }: Map
         {sortedEntries.map((key, i) => {
           const isFiltered = filters.repressionTypes.length > 0 && !filters.repressionTypes.includes(key);
           return (
-            <button
+            <div
               key={key}
-              onClick={() => onToggleRepression(key)}
-              className={`flex items-center gap-1.5 w-full text-left group transition-opacity ${
+              className={`flex items-center gap-1.5 w-full transition-opacity ${
                 isFiltered ? "opacity-30" : "opacity-100"
               }`}
             >
@@ -36,13 +34,13 @@ export function MapLegend({ repressionCounts, filters, onToggleRepression }: Map
                 className="w-2.5 h-2.5 rounded-sm flex-shrink-0"
                 style={{ backgroundColor: REPRESSION_COLORS[i % REPRESSION_COLORS.length] }}
               />
-              <span className="text-[10px] text-gray-400 group-hover:text-gray-200 truncate flex-1">
+              <span className="text-[10px] text-gray-400 truncate flex-1">
                 {REPRESSION_SHORT_LABELS[key]}
               </span>
               <span className="text-[9px] text-gray-600 tabular-nums">
                 {(repressionCounts[key] || 0).toLocaleString()}
               </span>
-            </button>
+            </div>
           );
         })}
       </div>

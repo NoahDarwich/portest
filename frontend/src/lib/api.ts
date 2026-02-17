@@ -65,6 +65,9 @@ export interface MapDataPoint {
   repression: string;
   country: string;
   violence_heat: number;
+  demand: string;
+  tactic: string;
+  severity: number;
 }
 
 export interface RepressionStatsResponse {

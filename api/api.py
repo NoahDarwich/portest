@@ -822,6 +822,20 @@ async def get_map_data() -> list[dict[str, Any]]:
     settings = get_settings()
     data_path = settings.data_path / "full_df.csv"
 
+    # Severity mapping based on repression type
+    severity_map = {
+        "No known coercion, no security presence": 0,
+        "Security forces present at event": 1,
+        "Security forces or other repressive groups present at event": 1,
+        "Army present at event": 2,
+        "Participants summoned to security facility": 2,
+        "Physical harassment": 3,
+        "Arrests / detentions": 3,
+        "Party Militias/ Baltagia present at event": 3,
+        "Injuries inflicted": 4,
+        "Deaths inflicted": 5,
+    }
+
     try:
         df = pd.read_csv(
             data_path,
@@ -831,6 +845,8 @@ async def get_map_data() -> list[dict[str, Any]]:
                 "repression",
                 "country",
                 "violence",
+                "demandtypeone",
+                "tacticprimary",
             ],
         )
         df = df.dropna(subset=["gpslatend", "gpslongend"])
@@ -838,13 +854,17 @@ async def get_map_data() -> list[dict[str, Any]]:
 
         points = []
         for _, row in df.iterrows():
+            repression = str(row["repression"]) if pd.notna(row["repression"]) else ""
             points.append(
                 {
                     "lat": round(float(row["gpslatend"]), 5),
                     "lng": round(float(row["gpslongend"]), 5),
-                    "repression": str(row["repression"]) if pd.notna(row["repression"]) else "",
+                    "repression": repression,
                     "country": str(row["country"]) if pd.notna(row["country"]) else "",
                     "violence_heat": int(row["violence_heat"]),
+                    "demand": str(row["demandtypeone"]) if pd.notna(row["demandtypeone"]) else "",
+                    "tactic": str(row["tacticprimary"]) if pd.notna(row["tacticprimary"]) else "",
+                    "severity": severity_map.get(repression, 0),
                 }
             )
 

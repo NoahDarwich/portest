@@ -3,29 +3,35 @@
 import { useState, useEffect, useMemo } from "react";
 import dynamic from "next/dynamic";
 import { api, MapDataPoint } from "@/lib/api";
-import { MapFilters, DEFAULT_FILTERS } from "@/lib/types";
-import { MapFilterBar } from "./map-filter-bar";
+import { MapFilters } from "@/lib/types";
 import { MapLegend } from "./map-legend";
 import { Loader2, MapPin } from "lucide-react";
 
-const ProtestMapInner = dynamic(() => import("./protest-map-inner"), {
-  ssr: false,
-  loading: () => (
-    <div className="h-full flex items-center justify-center">
-      <Loader2 className="h-8 w-8 animate-spin text-gray-500" />
-    </div>
-  ),
-});
+const ProtestMapInner = dynamic(
+  () => import("./protest-map-inner"),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-full flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-gray-500" />
+      </div>
+    ),
+  }
+) as React.ComponentType<{ points: MapDataPoint[]; colorMode: "type" | "severity" }>;
 
 interface ProtestMapProps {
-  onCountrySelect?: (country: string | null) => void;
+  filters: MapFilters;
+  onAvailableFiltersReady?: (data: {
+    repressionTypes: string[];
+    demandTypes: string[];
+    tactics: string[];
+  }) => void;
 }
 
-export function ProtestMap({ onCountrySelect }: ProtestMapProps) {
+export function ProtestMap({ filters, onAvailableFiltersReady }: ProtestMapProps) {
   const [points, setPoints] = useState<MapDataPoint[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [filters, setFilters] = useState<MapFilters>(DEFAULT_FILTERS);
 
   useEffect(() => {
     async function loadMapData() {
@@ -33,6 +39,11 @@ export function ProtestMap({ onCountrySelect }: ProtestMapProps) {
         const data = await api.getMapData();
         setPoints(data);
         setError(null);
+
+        const repressionTypes = [...new Set(data.map((p) => p.repression).filter(Boolean))];
+        const demandTypes = [...new Set(data.map((p) => p.demand).filter(Boolean))].sort();
+        const tactics = [...new Set(data.map((p) => p.tactic).filter(Boolean))].sort();
+        onAvailableFiltersReady?.({ repressionTypes, demandTypes, tactics });
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to load map data");
       } finally {
@@ -40,19 +51,15 @@ export function ProtestMap({ onCountrySelect }: ProtestMapProps) {
       }
     }
     loadMapData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const filteredPoints = useMemo(() => {
     return points.filter((p) => {
-      if (filters.countries.length > 0 && !filters.countries.includes(p.country)) {
-        return false;
-      }
-      if (filters.repressionTypes.length > 0 && !filters.repressionTypes.includes(p.repression)) {
-        return false;
-      }
-      if (filters.violentOnly && p.violence_heat === 0) {
-        return false;
-      }
+      if (filters.countries.length > 0 && !filters.countries.includes(p.country)) return false;
+      if (filters.repressionTypes.length > 0 && !filters.repressionTypes.includes(p.repression)) return false;
+      if (filters.demandTypes.length > 0 && !filters.demandTypes.includes(p.demand)) return false;
+      if (filters.tactics.length > 0 && !filters.tactics.includes(p.tactic)) return false;
       return true;
     });
   }, [points, filters]);
@@ -65,21 +72,6 @@ export function ProtestMap({ onCountrySelect }: ProtestMapProps) {
     return counts;
   }, [filteredPoints]);
 
-  const availableRepressionTypes = useMemo(() => {
-    const types = new Set<string>();
-    points.forEach((p) => types.add(p.repression));
-    return Array.from(types);
-  }, [points]);
-
-  const handleFilterChange = (newFilters: MapFilters) => {
-    setFilters(newFilters);
-    if (newFilters.countries.length === 1) {
-      onCountrySelect?.(newFilters.countries[0]);
-    } else {
-      onCountrySelect?.(null);
-    }
-  };
-
   if (error) {
     return (
       <div className="h-full flex flex-col items-center justify-center text-gray-500">
@@ -91,27 +83,16 @@ export function ProtestMap({ onCountrySelect }: ProtestMapProps) {
 
   return (
     <div className="relative h-full">
-      <ProtestMapInner points={filteredPoints} />
+      <ProtestMapInner points={filteredPoints} colorMode={filters.colorMode} />
 
       {!loading && (
         <>
-          <MapFilterBar
-            filters={filters}
-            onFilterChange={handleFilterChange}
-            availableRepressionTypes={availableRepressionTypes}
-          />
-
-          <MapLegend
-            repressionCounts={repressionCounts}
-            filters={filters}
-            onToggleRepression={(type) => {
-              const current = filters.repressionTypes;
-              const updated = current.includes(type)
-                ? current.filter((t) => t !== type)
-                : [...current, type];
-              handleFilterChange({ ...filters, repressionTypes: updated });
-            }}
-          />
+          {filters.colorMode === "type" && (
+            <MapLegend
+              repressionCounts={repressionCounts}
+              filters={filters}
+            />
+          )}
 
           <div className="absolute bottom-3 right-3 glass px-3 py-1.5 rounded-md text-xs text-gray-300 z-[1000]">
             {filteredPoints.length.toLocaleString()} events

@@ -6,19 +6,24 @@ import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import "leaflet.heat";
 import type { MapDataPoint } from "@/lib/api";
-import { REPRESSION_COLORS, REPRESSION_SHORT_LABELS } from "@/lib/constants";
+import type { ColorMode } from "@/lib/types";
+import { REPRESSION_COLORS, REPRESSION_SHORT_LABELS, SEVERITY_COLORS, SEVERITY_LABELS } from "@/lib/constants";
 
+// Build repression → color map for "type" mode
 const REPRESSION_COLOR_MAP: Record<string, string> = {};
 const repressionKeys = Object.keys(REPRESSION_SHORT_LABELS);
 repressionKeys.forEach((key, i) => {
   REPRESSION_COLOR_MAP[key] = REPRESSION_COLORS[i % REPRESSION_COLORS.length];
 });
 
-function getRepressionColor(repression: string): string {
-  return REPRESSION_COLOR_MAP[repression] || "#94a3b8";
+function getPointColor(point: MapDataPoint, colorMode: ColorMode): string {
+  if (colorMode === "severity") {
+    return SEVERITY_COLORS[point.severity] || SEVERITY_COLORS[0];
+  }
+  return REPRESSION_COLOR_MAP[point.repression] || "#94a3b8";
 }
 
-function HeatmapLayer({ points }: { points: MapDataPoint[] }) {
+function HeatmapLayer({ points, colorMode }: { points: MapDataPoint[]; colorMode: ColorMode }) {
   const map = useMap();
 
   useEffect(() => {
@@ -27,32 +32,46 @@ function HeatmapLayer({ points }: { points: MapDataPoint[] }) {
     const heatData: [number, number, number][] = points.map((p) => [
       p.lat,
       p.lng,
-      0.5 + p.violence_heat * 0.5,
+      colorMode === "severity"
+        ? 0.2 + (p.severity / 5) * 0.8 // severity 0→0.2, severity 5→1.0
+        : 0.5 + p.violence_heat * 0.5,
     ]);
+
+    const gradient: Record<number, string> =
+      colorMode === "severity"
+        ? {
+            0: "#4b5563",
+            0.25: "#3b82f6",
+            0.45: "#eab308",
+            0.65: "#f97316",
+            0.85: "#ef4444",
+            1: "#991b1b",
+          }
+        : {
+            0.2: "#ffffb2",
+            0.4: "#fecc5c",
+            0.6: "#fd8d3c",
+            0.8: "#f03b20",
+            1: "#bd0026",
+          };
 
     const heat = L.heatLayer(heatData, {
       radius: 10,
       blur: 12,
       maxZoom: 10,
       minOpacity: 0.3,
-      gradient: {
-        0.2: "#ffffb2",
-        0.4: "#fecc5c",
-        0.6: "#fd8d3c",
-        0.8: "#f03b20",
-        1.0: "#bd0026",
-      },
+      gradient,
     }).addTo(map);
 
     return () => {
       map.removeLayer(heat);
     };
-  }, [map, points]);
+  }, [map, points, colorMode]);
 
   return null;
 }
 
-function ZoomAwareMarkers({ points }: { points: MapDataPoint[] }) {
+function ZoomAwareMarkers({ points, colorMode }: { points: MapDataPoint[]; colorMode: ColorMode }) {
   const map = useMap();
   const [zoom, setZoom] = useState(map.getZoom());
 
@@ -74,20 +93,32 @@ function ZoomAwareMarkers({ points }: { points: MapDataPoint[] }) {
           center={[p.lat, p.lng]}
           radius={5}
           pathOptions={{
-            fillColor: getRepressionColor(p.repression),
+            fillColor: getPointColor(p, colorMode),
             fillOpacity: 0.8,
             color: "rgba(255,255,255,0.3)",
             weight: 1,
           }}
         >
           <Popup>
-            <div className="text-xs leading-relaxed">
+            <div className="text-xs leading-relaxed min-w-[140px]">
               <div className="font-semibold text-gray-900">{p.country}</div>
               <div className="text-gray-600">
                 {REPRESSION_SHORT_LABELS[p.repression] || p.repression}
               </div>
-              <div className="text-gray-500">
-                {p.violence_heat > 0 ? "Violent" : "Non-violent"}
+              {p.demand && (
+                <div className="text-gray-500">Demand: {p.demand}</div>
+              )}
+              {p.tactic && (
+                <div className="text-gray-500">Tactic: {p.tactic}</div>
+              )}
+              <div className="mt-1 flex items-center gap-1">
+                <span
+                  className="w-2 h-2 rounded-full inline-block"
+                  style={{ backgroundColor: SEVERITY_COLORS[p.severity] }}
+                />
+                <span className="text-gray-500">
+                  Severity: {SEVERITY_LABELS[p.severity] || "Unknown"}
+                </span>
               </div>
             </div>
           </Popup>
@@ -99,9 +130,10 @@ function ZoomAwareMarkers({ points }: { points: MapDataPoint[] }) {
 
 interface ProtestMapInnerProps {
   points: MapDataPoint[];
+  colorMode: ColorMode;
 }
 
-export default function ProtestMapInner({ points }: ProtestMapInnerProps) {
+export default function ProtestMapInner({ points, colorMode }: ProtestMapInnerProps) {
   const [mapReady, setMapReady] = useState(false);
 
   const handleMapReady = useCallback(() => {
@@ -123,8 +155,8 @@ export default function ProtestMapInner({ points }: ProtestMapInnerProps) {
       />
       {mapReady && (
         <>
-          <HeatmapLayer points={points} />
-          <ZoomAwareMarkers points={points} />
+          <HeatmapLayer points={points} colorMode={colorMode} />
+          <ZoomAwareMarkers points={points} colorMode={colorMode} />
         </>
       )}
     </MapContainer>
