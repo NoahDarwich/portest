@@ -61,7 +61,6 @@ class ModelConfig:
             "locationtypeend",
             "demandtypeone",
             "tacticprimary",
-            "violence",
             "combined_sizes",
         ]
     )

@@ -161,7 +161,6 @@ class PredictionInput(BaseModel):
     location_type: str = Field(..., description="Type of location")
     demand_type: str = Field(..., description="Type of demand from protesters")
     protest_tactic: str = Field(..., description="Primary protest tactic")
-    protester_violence: str = Field(..., description="Level of protester violence")
     participant_count: int = Field(..., ge=0, description="Number of participants")
 
 
@@ -496,7 +495,6 @@ async def predict(
     location_type: str = Query(..., description="Location type (e.g., Midan, Main road)"),
     demand_type: str = Query(..., description="Demand type (e.g., Politics (national), Economy)"),
     protest_tactic: str = Query(..., description="Primary tactic (e.g., Demonstration / protest)"),
-    protester_violence: str = Query(..., description="Violence level (Peaceful, Riot, Unknown)"),
     combined_sizes: int = Query(..., ge=0, description="Number of participants"),
 ) -> PredictionResponse:
     """
@@ -520,7 +518,6 @@ async def predict(
         "location_type": location_type,
         "demand_type": demand_type,
         "protest_tactic": protest_tactic,
-        "protester_violence": protester_violence,
         "combined_sizes": combined_sizes,
     }
 
@@ -536,7 +533,6 @@ async def predict(
         # Record metrics for cached response
         record_prediction_metrics(
             country=country,
-            violence_level=protester_violence,
             participant_count=combined_sizes,
             predictions=cached_result["predictions"],
             latency=latency,
@@ -579,7 +575,6 @@ async def predict(
                 "locationtypeend": [str(location_type)],
                 "demandtypeone": [str(demand_type)],
                 "tacticprimary": [str(protest_tactic)],
-                "violence": [str(protester_violence)],
                 "combined_sizes": [int(combined_sizes)],
             }
         )
@@ -624,7 +619,6 @@ async def predict(
         latency = time.time() - start_time
         record_prediction_metrics(
             country=country,
-            violence_level=protester_violence,
             participant_count=combined_sizes,
             predictions=results,
             latency=latency,
@@ -664,7 +658,6 @@ async def get_model_info() -> ModelInfoResponse:
             "locationtypeend",
             "demandtypeone",
             "tacticprimary",
-            "violence",
             "combined_sizes",
         ],
         is_loaded=model_manager.is_loaded,
@@ -774,21 +767,18 @@ async def get_options() -> dict[str, list[str]]:
                     "locationtypeend",
                     "demandtypeone",
                     "tacticprimary",
-                    "violence",
                 ],
             )
             return {
                 "location_types": sorted(df["locationtypeend"].dropna().unique().tolist()),
                 "demand_types": sorted(df["demandtypeone"].dropna().unique().tolist()),
                 "tactics": sorted(df["tacticprimary"].dropna().unique().tolist()),
-                "violence_levels": sorted(df["violence"].dropna().unique().tolist()),
             }
         else:
             return {
                 "location_types": ["Midan", "Main road", "Government building"],
                 "demand_types": ["Politics (national)", "Economy", "Services"],
                 "tactics": ["Demonstration / protest", "Roadblock or blockade"],
-                "violence_levels": ["Peaceful", "Riot", "Unknown"],
             }
     except Exception as e:
         logger.warning("Failed to load options from data", error=str(e))
@@ -796,7 +786,6 @@ async def get_options() -> dict[str, list[str]]:
             "location_types": ["Midan", "Main road"],
             "demand_types": ["Politics (national)"],
             "tactics": ["Demonstration / protest"],
-            "violence_levels": ["Peaceful", "Riot"],
         }
 
 

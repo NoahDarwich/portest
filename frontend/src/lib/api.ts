@@ -6,7 +6,6 @@ export interface PredictionInput {
   location_type: string;
   demand_type: string;
   protest_tactic: string;
-  protester_violence: string;
   combined_sizes: number;
 }
 
@@ -41,7 +40,6 @@ export interface OptionsResponse {
   location_types: string[];
   demand_types: string[];
   tactics: string[];
-  violence_levels: string[];
 }
 
 export interface FeatureImportanceResponse {
@@ -111,7 +109,6 @@ class ApiClient {
       location_type: input.location_type,
       demand_type: input.demand_type,
       protest_tactic: input.protest_tactic,
-      protester_violence: input.protester_violence,
       combined_sizes: input.combined_sizes.toString(),
     });
 

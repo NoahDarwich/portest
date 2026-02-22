@@ -51,6 +51,33 @@ body {
   color: rgba(228, 228, 231, 0.6) !important;
 }
 
+/* Marker cluster icons */
+.protest-marker {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  opacity: 0.85;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+}
+
+.protest-cluster {
+  border-radius: 50%;
+  background: rgba(15, 17, 23, 0.88);
+  border: 2px solid rgba(255, 255, 255, 0.18);
+  color: #e4e4e7;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
+  backdrop-filter: blur(4px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+}
+
+/* Hide the default markercluster styles that clash with dark theme */
+.leaflet-cluster-anim .leaflet-marker-icon,
+.leaflet-cluster-anim .leaflet-marker-shadow {
+  transition: transform 0.3s ease-out, opacity 0.3s ease-in;
+}
+
 /* Curtain drop-down animation */
 @keyframes curtain-down {
   from {

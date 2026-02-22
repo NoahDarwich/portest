@@ -30,7 +30,6 @@ export function PredictionFormCompact({ onPredict, isLoading }: PredictionFormCo
   const [locationType, setLocationType] = useState("");
   const [demandType, setDemandType] = useState("");
   const [tactic, setTactic] = useState("");
-  const [violence, setViolence] = useState("");
   const [participants, setParticipants] = useState("100");
 
   useEffect(() => {
@@ -61,14 +60,13 @@ export function PredictionFormCompact({ onPredict, isLoading }: PredictionFormCo
       location_type: locationType,
       demand_type: demandType,
       protest_tactic: tactic,
-      protester_violence: violence,
       combined_sizes: parseInt(participants, 10) || 0,
     });
   };
 
   const governorates = country && regions ? regions[country] || [] : [];
 
-  const isValid = country && governorate && locationType && demandType && tactic && violence;
+  const isValid = country && governorate && locationType && demandType && tactic;
 
   if (loading) {
     return (
@@ -169,19 +167,6 @@ export function PredictionFormCompact({ onPredict, isLoading }: PredictionFormCo
               <SelectContent>
                 {options?.tactics.map((t) => (
                   <SelectItem key={t} value={t}>{t}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="cf-violence" className="text-xs text-gray-400">Protester Violence</Label>
-            <Select value={violence} onValueChange={setViolence}>
-              <SelectTrigger id="cf-violence">
-                <SelectValue placeholder="Select level" />
-              </SelectTrigger>
-              <SelectContent>
-                {options?.violence_levels.map((v) => (
-                  <SelectItem key={v} value={v}>{v}</SelectItem>
                 ))}
               </SelectContent>
             </Select>

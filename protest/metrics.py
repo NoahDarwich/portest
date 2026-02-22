@@ -78,12 +78,6 @@ INPUT_COUNTRY_DISTRIBUTION = Counter(
     ["country"],
 )
 
-INPUT_VIOLENCE_DISTRIBUTION = Counter(
-    "protest_input_violence_total",
-    "Distribution of input violence levels",
-    ["violence_level"],
-)
-
 INPUT_PARTICIPANT_COUNT = Histogram(
     "protest_input_participant_count",
     "Distribution of participant counts in requests",
@@ -104,7 +98,6 @@ def set_app_info(version: str, environment: str, model_id: str) -> None:
 
 def record_prediction_metrics(
     country: str,
-    violence_level: str,
     participant_count: int,
     predictions: dict[str, dict],
     latency: float,
@@ -123,7 +116,6 @@ def record_prediction_metrics(
 
     # Input distribution metrics
     INPUT_COUNTRY_DISTRIBUTION.labels(country=country).inc()
-    INPUT_VIOLENCE_DISTRIBUTION.labels(violence_level=violence_level).inc()
     INPUT_PARTICIPANT_COUNT.observe(participant_count)
 
     # Prediction distribution metrics

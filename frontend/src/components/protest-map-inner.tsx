@@ -1,15 +1,17 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { MapContainer, TileLayer, CircleMarker, Popup, useMap } from "react-leaflet";
+import { MapContainer, TileLayer, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import "leaflet.heat";
+import "leaflet.markercluster";
+import "leaflet.markercluster/dist/MarkerCluster.css";
+import "leaflet.markercluster/dist/MarkerCluster.Default.css";
 import type { MapDataPoint } from "@/lib/api";
 import type { ColorMode } from "@/lib/types";
 import { REPRESSION_COLORS, REPRESSION_SHORT_LABELS, SEVERITY_COLORS, SEVERITY_LABELS } from "@/lib/constants";
 
-// Build repression → color map for "type" mode
 const REPRESSION_COLOR_MAP: Record<string, string> = {};
 const repressionKeys = Object.keys(REPRESSION_SHORT_LABELS);
 repressionKeys.forEach((key, i) => {
@@ -23,37 +25,24 @@ function getPointColor(point: MapDataPoint, colorMode: ColorMode): string {
   return REPRESSION_COLOR_MAP[point.repression] || "#94a3b8";
 }
 
-function HeatmapLayer({ points, colorMode }: { points: MapDataPoint[]; colorMode: ColorMode }) {
+function HeatmapLayer({ points, colorMode, visible }: { points: MapDataPoint[]; colorMode: ColorMode; visible: boolean }) {
   const map = useMap();
 
   useEffect(() => {
-    if (!points.length) return;
+    if (!points.length || !visible) return;
 
     const heatData: [number, number, number][] = points.map((p) => [
       p.lat,
       p.lng,
       colorMode === "severity"
-        ? 0.2 + (p.severity / 5) * 0.8 // severity 0→0.2, severity 5→1.0
-        : 0.5 + p.violence_heat * 0.5,
+        ? 0.2 + (p.severity / 5) * 0.8
+        : 0.6,
     ]);
 
     const gradient: Record<number, string> =
       colorMode === "severity"
-        ? {
-            0: "#6b7280",
-            0.2: "#7eb8a4",
-            0.4: "#d4a87c",
-            0.6: "#c98a5a",
-            0.8: "#c97b7b",
-            1: "#a35555",
-          }
-        : {
-            0.2: "#7eb8a4",
-            0.4: "#d4a87c",
-            0.6: "#c98a5a",
-            0.8: "#c97b7b",
-            1: "#a35555",
-          };
+        ? { 0: "#6b7280", 0.2: "#7eb8a4", 0.4: "#d4a87c", 0.6: "#c98a5a", 0.8: "#c97b7b", 1: "#a35555" }
+        : { 0.2: "#7eb8a4", 0.4: "#d4a87c", 0.6: "#c98a5a", 0.8: "#c97b7b", 1: "#a35555" };
 
     const heat = L.heatLayer(heatData, {
       radius: 10,
@@ -63,67 +52,91 @@ function HeatmapLayer({ points, colorMode }: { points: MapDataPoint[]; colorMode
       gradient,
     }).addTo(map);
 
-    return () => {
-      map.removeLayer(heat);
-    };
-  }, [map, points, colorMode]);
+    return () => { map.removeLayer(heat); };
+  }, [map, points, colorMode, visible]);
 
   return null;
 }
 
-function ZoomAwareMarkers({ points, colorMode }: { points: MapDataPoint[]; colorMode: ColorMode }) {
+function ClusterLayer({ points, colorMode, visible }: { points: MapDataPoint[]; colorMode: ColorMode; visible: boolean }) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (!points.length || !visible) return;
+
+    const clusterGroup = (L as any).markerClusterGroup({
+      maxClusterRadius: 50,
+      spiderfyOnMaxZoom: true,
+      showCoverageOnHover: false,
+      zoomToBoundsOnClick: true,
+      disableClusteringAtZoom: 13,
+      iconCreateFunction: (cluster: any) => {
+        const count = cluster.getChildCount();
+        const size = count < 10 ? 32 : count < 100 ? 38 : 44;
+        return L.divIcon({
+          html: `<div class="protest-cluster" style="width:${size}px;height:${size}px;line-height:${size}px">${count}</div>`,
+          className: "",
+          iconSize: [size, size],
+          iconAnchor: [size / 2, size / 2],
+        });
+      },
+    });
+
+    points.forEach((p) => {
+      const color = getPointColor(p, colorMode);
+      const icon = L.divIcon({
+        html: `<div class="protest-marker" style="background:${color}"></div>`,
+        className: "",
+        iconSize: [10, 10],
+        iconAnchor: [5, 5],
+      });
+
+      const marker = L.marker([p.lat, p.lng], { icon });
+
+      const repLabel = REPRESSION_SHORT_LABELS[p.repression] || p.repression || "—";
+      const sevLabel = SEVERITY_LABELS[p.severity] || "Unknown";
+      const sevColor = SEVERITY_COLORS[p.severity] || "#94a3b8";
+
+      marker.bindPopup(`
+        <div style="font-size:13px;line-height:1.5;min-width:180px;color:#1f2937">
+          <div style="font-weight:600;font-size:14px">${p.country}</div>
+          <div style="color:#6b7280;margin-top:2px">${repLabel}</div>
+          ${p.demand ? `<div style="color:#9ca3af;margin-top:2px">Demand: ${p.demand}</div>` : ""}
+          ${p.tactic ? `<div style="color:#9ca3af">Tactic: ${p.tactic}</div>` : ""}
+          <div style="margin-top:6px;display:flex;align-items:center;gap:6px">
+            <span style="width:10px;height:10px;border-radius:50%;background:${sevColor};display:inline-block;flex-shrink:0"></span>
+            <span style="color:#6b7280">Severity: ${sevLabel}</span>
+          </div>
+        </div>
+      `);
+
+      clusterGroup.addLayer(marker);
+    });
+
+    map.addLayer(clusterGroup);
+    return () => { map.removeLayer(clusterGroup); };
+  }, [map, points, colorMode, visible]);
+
+  return null;
+}
+
+function ZoomRouter({ points, colorMode }: { points: MapDataPoint[]; colorMode: ColorMode }) {
   const map = useMap();
   const [zoom, setZoom] = useState(map.getZoom());
 
   useEffect(() => {
     const onZoom = () => setZoom(map.getZoom());
     map.on("zoomend", onZoom);
-    return () => {
-      map.off("zoomend", onZoom);
-    };
+    return () => { map.off("zoomend", onZoom); };
   }, [map]);
 
-  if (zoom < 8 || !points.length) return null;
+  const showHeatmap = zoom < 7;
+  const showClusters = zoom >= 7;
 
   return (
     <>
-      {points.map((p, i) => (
-        <CircleMarker
-          key={i}
-          center={[p.lat, p.lng]}
-          radius={5}
-          pathOptions={{
-            fillColor: getPointColor(p, colorMode),
-            fillOpacity: 0.8,
-            color: "rgba(255,255,255,0.3)",
-            weight: 1,
-          }}
-        >
-          <Popup>
-            <div className="text-sm leading-relaxed min-w-[180px]">
-              <div className="font-semibold text-gray-900 text-base">{p.country}</div>
-              <div className="text-gray-600 mt-0.5">
-                {REPRESSION_SHORT_LABELS[p.repression] || p.repression}
-              </div>
-              {p.demand && (
-                <div className="text-gray-500 mt-0.5">Demand: {p.demand}</div>
-              )}
-              {p.tactic && (
-                <div className="text-gray-500">Tactic: {p.tactic}</div>
-              )}
-              <div className="mt-1.5 flex items-center gap-1.5">
-                <span
-                  className="w-2.5 h-2.5 rounded-full inline-block"
-                  style={{ backgroundColor: SEVERITY_COLORS[p.severity] }}
-                />
-                <span className="text-gray-500">
-                  Severity: {SEVERITY_LABELS[p.severity] || "Unknown"}
-                </span>
-              </div>
-            </div>
-          </Popup>
-        </CircleMarker>
-      ))}
+      <HeatmapLayer points={points} colorMode={colorMode} visible={showHeatmap} />
+      <ClusterLayer points={points} colorMode={colorMode} visible={showClusters} />
     </>
   );
 }
@@ -135,10 +148,7 @@ interface ProtestMapInnerProps {
 
 export default function ProtestMapInner({ points, colorMode }: ProtestMapInnerProps) {
   const [mapReady, setMapReady] = useState(false);
-
-  const handleMapReady = useCallback(() => {
-    setMapReady(true);
-  }, []);
+  const handleMapReady = useCallback(() => { setMapReady(true); }, []);
 
   return (
     <MapContainer
@@ -153,12 +163,7 @@ export default function ProtestMapInner({ points, colorMode }: ProtestMapInnerPr
         attribution='&copy; <a href="https://carto.com/">CARTO</a>'
         url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
       />
-      {mapReady && (
-        <>
-          <HeatmapLayer points={points} colorMode={colorMode} />
-          <ZoomAwareMarkers points={points} colorMode={colorMode} />
-        </>
-      )}
+      {mapReady && <ZoomRouter points={points} colorMode={colorMode} />}
     </MapContainer>
   );
 }

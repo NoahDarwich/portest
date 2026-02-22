@@ -45,7 +45,6 @@ FEATURE_COLUMNS = [
     "locationtypeend",
     "demandtypeone",
     "tacticprimary",
-    "violence",
     "combined_sizes",
 ]
 
