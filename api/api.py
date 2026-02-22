@@ -850,6 +850,21 @@ async def get_map_data() -> list[dict[str, Any]]:
             ],
         )
         df = df.dropna(subset=["gpslatend", "gpslongend"])
+
+        # Filter to only the 3 supported countries using per-country bounding boxes
+        country_bounds = {
+            "Iraq":    (29.0, 37.5, 38.5, 48.8),
+            "Lebanon": (33.0, 34.7, 35.0, 36.7),
+            "Egypt":   (22.0, 31.7, 24.7, 37.1),
+        }
+        df = df[df["country"].isin(country_bounds)]
+
+        def in_bounds(row: pd.Series) -> bool:
+            lat_min, lat_max, lng_min, lng_max = country_bounds[row["country"]]
+            return lat_min <= row["gpslatend"] <= lat_max and lng_min <= row["gpslongend"] <= lng_max
+
+        df = df[df.apply(in_bounds, axis=1)]
+
         df["violence_heat"] = df["violence"].notna().astype(int)
 
         points = []
