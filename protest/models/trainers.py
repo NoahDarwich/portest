@@ -151,7 +151,7 @@ class RandomForestTrainer(BaseModel):
             raise RuntimeError("Model must be fitted before prediction.")
 
         # Get probabilities from pipeline
-        if hasattr(self.model, "estimators_"):
+        if isinstance(self.model, MultiOutputClassifier):
             # MultiOutputClassifier
             probas = []
             X_transformed = self.pipeline.named_steps["preprocessor"].transform(X)
@@ -171,7 +171,7 @@ class RandomForestTrainer(BaseModel):
             preprocessor = self.pipeline.named_steps["preprocessor"]
             feature_names = preprocessor.get_feature_names_out()
 
-            if hasattr(self.model, "estimators_"):
+            if isinstance(self.model, MultiOutputClassifier):
                 # Average importance across all estimators
                 importances = np.mean(
                     [est.feature_importances_ for est in self.model.estimators_], axis=0
@@ -268,7 +268,7 @@ class XGBoostTrainer(BaseModel):
         if not self._is_fitted:
             raise RuntimeError("Model must be fitted before prediction.")
 
-        if hasattr(self.model, "estimators_"):
+        if isinstance(self.model, MultiOutputClassifier):
             probas = []
             X_transformed = self.pipeline.named_steps["preprocessor"].transform(X)
             for estimator in self.model.estimators_:
@@ -286,7 +286,7 @@ class XGBoostTrainer(BaseModel):
             preprocessor = self.pipeline.named_steps["preprocessor"]
             feature_names = preprocessor.get_feature_names_out()
 
-            if hasattr(self.model, "estimators_"):
+            if isinstance(self.model, MultiOutputClassifier):
                 importances = np.mean(
                     [est.feature_importances_ for est in self.model.estimators_], axis=0
                 )
@@ -381,7 +381,7 @@ class LightGBMTrainer(BaseModel):
         if not self._is_fitted:
             raise RuntimeError("Model must be fitted before prediction.")
 
-        if hasattr(self.model, "estimators_"):
+        if isinstance(self.model, MultiOutputClassifier):
             probas = []
             X_transformed = self.pipeline.named_steps["preprocessor"].transform(X)
             for estimator in self.model.estimators_:
@@ -399,7 +399,7 @@ class LightGBMTrainer(BaseModel):
             preprocessor = self.pipeline.named_steps["preprocessor"]
             feature_names = preprocessor.get_feature_names_out()
 
-            if hasattr(self.model, "estimators_"):
+            if isinstance(self.model, MultiOutputClassifier):
                 importances = np.mean(
                     [est.feature_importances_ for est in self.model.estimators_], axis=0
                 )

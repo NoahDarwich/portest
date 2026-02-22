@@ -176,40 +176,18 @@ class PredictionResult(BaseModel):
         json_schema_extra = {"example": {"probability": 0.75, "confidence": 0.85}}
 
 
-class OutcomePrediction(BaseModel):
-    """Single outcome prediction."""
-
-    probability: float = Field(..., ge=0, le=1, description="Probability of outcome")
-    prediction: bool = Field(..., description="Binary prediction (True if likely)")
-
-
 class PredictionResponse(BaseModel):
-    """Prediction response with probabilities."""
+    """Prediction response with repression level and probability distribution."""
 
-    predictions: dict[str, OutcomePrediction]
+    repression_level: int = Field(..., ge=0, le=5, description="Predicted repression level (0–5)")
+    repression_label: str = Field(..., description="Human-readable label for the predicted level")
+    level_probabilities: dict[str, float] = Field(
+        ..., description="Probability for each repression level (keys '0'–'5')"
+    )
     model_id: str
     model_version: str
     cached: bool = False
     timestamp: datetime = Field(default_factory=datetime.utcnow)
-
-    class Config:
-        json_schema_extra = {
-            "example": {
-                "predictions": {
-                    "teargas": {"probability": 0.75, "prediction": True},
-                    "rubberbullets": {"probability": 0.20, "prediction": False},
-                    "liveammo": {"probability": 0.10, "prediction": False},
-                    "sticks": {"probability": 0.30, "prediction": False},
-                    "surround": {"probability": 0.65, "prediction": True},
-                    "cleararea": {"probability": 0.55, "prediction": True},
-                    "policerepress": {"probability": 0.80, "prediction": True},
-                },
-                "model_id": "abc123",
-                "model_version": "2.0.0",
-                "cached": False,
-                "timestamp": "2026-01-24T12:00:00Z",
-            }
-        }
 
 
 class FeatureImportanceResponse(BaseModel):
@@ -244,16 +222,14 @@ class ErrorResponse(BaseModel):
 class ModelManager:
     """Manages ML model loading and caching."""
 
-    # Target names for predictions (repression methods the model predicts)
-    TARGET_NAMES = [
-        "teargas",
-        "rubberbullets",
-        "liveammo",
-        "sticks",
-        "surround",
-        "cleararea",
-        "policerepress",
-    ]
+    SEVERITY_LABELS = {
+        0: "None",
+        1: "Presence",
+        2: "Escalated",
+        3: "Force used",
+        4: "Injuries",
+        5: "Lethal",
+    }
 
     def __init__(self) -> None:
         self._model: EnsembleModel | None = None
@@ -306,26 +282,25 @@ class ModelManager:
         """Get model type."""
         return "ensemble"
 
-    def predict(self, df: pd.DataFrame) -> dict[str, dict[str, Any]]:
+    def predict(self, df: pd.DataFrame) -> dict[str, Any]:
         """Run prediction and return formatted results."""
         if not self._loaded or self._model is None:
             raise RuntimeError("Model not loaded")
 
-        # Get predictions
-        probs = self._model.predict_proba(df)
-        preds = self._model.predict(df)
+        # Get predictions — single multi-class target
+        probs = self._model.predict_proba(df)  # list with 1 array of shape (1, 6)
+        preds = self._model.predict(df)        # shape (1, 1)
 
-        # Format results
-        results = {}
-        for i, name in enumerate(self.TARGET_NAMES):
-            if i < len(probs):
-                prob_positive = float(probs[i][0][1])
-                prediction = bool(preds[0][i] == 1)
-                results[name] = {
-                    "probability": prob_positive,
-                    "prediction": prediction,
-                }
+        level_probs = probs[0][0]              # array of 6 probabilities
+        predicted_level = int(preds[0][0])
 
+        results = {
+            "repression_level": predicted_level,
+            "repression_label": self.SEVERITY_LABELS.get(predicted_level, "Unknown"),
+            "level_probabilities": {
+                str(i): round(float(p), 4) for i, p in enumerate(level_probs)
+            },
+        }
         return results
 
 
@@ -539,11 +514,11 @@ async def predict(
             cached=True,
         )
 
+        p = cached_result["predictions"]
         return PredictionResponse(
-            predictions={
-                name: OutcomePrediction(**data)
-                for name, data in cached_result["predictions"].items()
-            },
+            repression_level=p["repression_level"],
+            repression_label=p["repression_label"],
+            level_probabilities=p["level_probabilities"],
             model_id=cached_result["model_id"],
             model_version=cached_result["model_version"],
             cached=True,
@@ -589,17 +564,10 @@ async def predict(
     try:
         results = model_manager.predict(prediction_input)
 
-        # Convert to response format
-        predictions = {
-            name: OutcomePrediction(
-                probability=data["probability"],
-                prediction=data["prediction"],
-            )
-            for name, data in results.items()
-        }
-
         response = PredictionResponse(
-            predictions=predictions,
+            repression_level=results["repression_level"],
+            repression_label=results["repression_label"],
+            level_probabilities=results["level_probabilities"],
             model_id=model_manager.model_id,
             model_version=settings.app_version,
             cached=False,
@@ -651,7 +619,7 @@ async def get_model_info() -> ModelInfoResponse:
     return ModelInfoResponse(
         model_type=model_manager.model_type,
         version=settings.app_version,
-        target_columns=ModelManager.TARGET_NAMES,
+        target_columns=["repression_level"],
         feature_columns=[
             "country",
             "governorate",

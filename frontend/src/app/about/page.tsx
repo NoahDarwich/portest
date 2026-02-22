@@ -15,7 +15,7 @@ const steps = [
   {
     number: 2,
     title: "Define Characteristics",
-    description: "Specify the location type, demand type, primary tactic, and expected level of protester violence.",
+    description: "Specify the location type, demand type, and primary tactic used by protesters.",
     icon: Target,
   },
   {
@@ -27,25 +27,24 @@ const steps = [
   {
     number: 4,
     title: "Get Predictions",
-    description: "Click 'Predict Outcomes' to receive probability estimates for 7 repression methods.",
+    description: "Click 'Predict Outcomes' to receive a repression level prediction (0–5) with a full probability distribution.",
     icon: CheckCircle,
   },
 ];
 
 const outcomes = [
-  { name: "Tear Gas", description: "Use of tear gas against protesters by security forces", severity: "high" },
-  { name: "Rubber Bullets", description: "Use of rubber bullets or similar non-lethal projectiles", severity: "high" },
-  { name: "Live Ammunition", description: "Use of live ammunition against protesters", severity: "critical" },
-  { name: "Sticks / Batons", description: "Use of batons, sticks, or blunt instruments", severity: "medium" },
-  { name: "Surround", description: "Protesters surrounded or encircled by security forces", severity: "medium" },
-  { name: "Area Cleared", description: "Protest area forcibly cleared by security forces", severity: "medium" },
-  { name: "Police Repression", description: "General police repressive action against protesters", severity: "high" },
+  { name: "Level 0 — None", description: "No known coercion or security presence at the event.", severity: "low" },
+  { name: "Level 1 — Presence", description: "Security forces or repressive groups present at the event.", severity: "low" },
+  { name: "Level 2 — Escalated", description: "Army deployed or participants summoned to a security facility.", severity: "medium" },
+  { name: "Level 3 — Force Used", description: "Physical harassment, arrests, detentions, or militia involvement.", severity: "medium" },
+  { name: "Level 4 — Injuries", description: "Injuries inflicted on protesters by security forces.", severity: "high" },
+  { name: "Level 5 — Lethal", description: "Deaths inflicted. Highest severity repression.", severity: "critical" },
 ];
 
 const faqs = [
   {
     question: "How accurate are the predictions?",
-    answer: "The ensemble model achieves approximately 95% accuracy on historical data. However, predictions are based on patterns from 2017-2022 and may not account for recent changes in political dynamics.",
+    answer: "The ensemble model achieves high accuracy on historical data for the repression level scale (0–5). However, predictions are based on patterns from 2017-2022 and may not account for recent changes in political dynamics.",
   },
   {
     question: "What data was used to train the model?",
@@ -57,7 +56,7 @@ const faqs = [
   },
   {
     question: "How should I interpret the probabilities?",
-    answer: "Probabilities indicate the likelihood of each outcome based on similar historical events. Higher probabilities suggest more common responses for similar protest profiles, but don't guarantee outcomes.",
+    answer: "The model returns a predicted repression level (0–5) and a probability for each level. The highlighted level has the highest probability based on similar historical events, but other levels are possible.",
   },
   {
     question: "Is this data updated in real-time?",
@@ -114,11 +113,11 @@ export default function AboutPage() {
       <section className="border-b border-white/5 py-12">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-2xl font-bold text-white mb-3">
-            Predict Protest Repression Methods
+            Predict Protest Repression Level
           </h2>
           <p className="text-sm text-gray-400 mb-6 max-w-xl mx-auto">
             Pro-Test uses an ensemble of machine learning models trained on historical protest
-            data to predict likely repression methods used against protesters.
+            data to predict the likely severity of repression — from no response to lethal force.
           </p>
           <Link href="/">
             <Button size="sm" className="gap-1.5">
@@ -151,9 +150,9 @@ export default function AboutPage() {
           </div>
         </section>
 
-        {/* Predicted Repression Methods */}
+        {/* Repression Levels */}
         <section className="mb-12">
-          <h3 className="text-lg font-semibold text-white mb-5">Predicted Repression Methods</h3>
+          <h3 className="text-lg font-semibold text-white mb-5">Repression Level Scale</h3>
           <div className="rounded-lg border border-white/10 overflow-hidden">
             <div className="divide-y divide-white/5">
               {outcomes.map((outcome, idx) => (
@@ -180,7 +179,7 @@ export default function AboutPage() {
               <li><strong className="text-yellow-400">Research Tool:</strong> This system is designed for research and risk assessment. It should not be the sole basis for safety decisions.</li>
               <li><strong className="text-yellow-400">Historical Data:</strong> Predictions are based on events from 2017-2022 and may not reflect current political conditions.</li>
               <li><strong className="text-yellow-400">Regional Scope:</strong> Only protests in Iraq, Lebanon, and Egypt are supported. Other regions require additional data.</li>
-              <li><strong className="text-yellow-400">Probabilistic:</strong> Outputs are probabilities, not certainties. Multiple outcomes may occur simultaneously.</li>
+              <li><strong className="text-yellow-400">Probabilistic:</strong> The output is a predicted severity level with a probability distribution. The actual level may differ.</li>
             </ul>
           </div>
         </section>

@@ -40,17 +40,9 @@ class ModelConfig:
     # Model-specific hyperparameters
     hyperparameters: dict[str, Any] = field(default_factory=dict)
 
-    # Target columns for multi-output classification
+    # Target column for repression level classification (0–5)
     target_columns: list[str] = field(
-        default_factory=lambda: [
-            "teargas",
-            "rubberbullets",
-            "liveammo",
-            "sticks",
-            "surround",
-            "cleararea",
-            "policerepress",
-        ]
+        default_factory=lambda: ["repression_level"]
     )
 
     # Feature columns

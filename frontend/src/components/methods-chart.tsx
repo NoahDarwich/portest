@@ -1,7 +1,7 @@
 "use client";
 
 import { PredictionResponse } from "@/lib/api";
-import { METHOD_LABELS, getBarColor } from "@/lib/constants";
+import { SEVERITY_COLORS, SEVERITY_LABELS } from "@/lib/constants";
 import { Shield } from "lucide-react";
 import {
   BarChart,
@@ -27,23 +27,52 @@ export function MethodsChart({ results }: MethodsChartProps) {
     );
   }
 
-  const chartData = Object.entries(results.predictions)
-    .map(([key, pred]) => ({
-      name: METHOD_LABELS[key] || key,
-      probability: Math.round(pred.probability * 100),
-      raw: pred.probability,
+  const level = results.repression_level;
+  const color = SEVERITY_COLORS[level] || "#6b7280";
+  const label = SEVERITY_LABELS[level] || results.repression_label;
+
+  const chartData = Object.entries(results.level_probabilities)
+    .map(([key, prob]) => ({
+      level: parseInt(key),
+      name: SEVERITY_LABELS[parseInt(key)] || key,
+      probability: Math.round(prob * 100),
+      raw: prob,
     }))
-    .sort((a, b) => b.probability - a.probability);
+    .sort((a, b) => a.level - b.level);
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-2">
-        <h3 className="text-xs font-medium text-gray-400">Predicted Repression Methods</h3>
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="text-xs font-medium text-gray-400">Predicted Repression Level</h3>
         {results.cached && (
           <span className="text-[10px] bg-white/5 text-gray-500 px-1.5 py-0.5 rounded">cached</span>
         )}
       </div>
-      <div className="h-[250px] w-full">
+
+      {/* Prominent level indicator */}
+      <div
+        className="flex items-center gap-3 px-4 py-3 rounded-lg mb-4"
+        style={{ background: `${color}18`, border: `1px solid ${color}40` }}
+      >
+        <span
+          className="w-3 h-3 rounded-full flex-shrink-0"
+          style={{ background: color }}
+        />
+        <div>
+          <div className="text-lg font-semibold" style={{ color }}>
+            Level {level} — {label}
+          </div>
+          <div className="text-xs text-gray-500 mt-0.5">
+            {Math.round((results.level_probabilities[String(level)] || 0) * 100)}% probability
+          </div>
+        </div>
+      </div>
+
+      {/* Probability distribution across all levels */}
+      <div className="text-[10px] text-gray-500 uppercase tracking-wider mb-2">
+        Level probability distribution
+      </div>
+      <div className="h-[180px] w-full">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart
             data={chartData}
@@ -62,7 +91,7 @@ export function MethodsChart({ results }: MethodsChartProps) {
             <YAxis
               type="category"
               dataKey="name"
-              width={110}
+              width={80}
               fontSize={11}
               tickLine={false}
               axisLine={false}
@@ -81,8 +110,11 @@ export function MethodsChart({ results }: MethodsChartProps) {
               labelStyle={{ color: "#a1a1aa" }}
             />
             <Bar dataKey="probability" radius={[0, 4, 4, 0]}>
-              {chartData.map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={getBarColor(entry.raw)} />
+              {chartData.map((entry) => (
+                <Cell
+                  key={`cell-${entry.level}`}
+                  fill={entry.level === level ? color : `${SEVERITY_COLORS[entry.level]}60`}
+                />
               ))}
             </Bar>
           </BarChart>

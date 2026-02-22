@@ -118,16 +118,11 @@ def record_prediction_metrics(
     INPUT_COUNTRY_DISTRIBUTION.labels(country=country).inc()
     INPUT_PARTICIPANT_COUNT.observe(participant_count)
 
-    # Prediction distribution metrics
-    for outcome, data in predictions.items():
-        prob = data.get("probability", 0)
-        predicted = data.get("prediction", False)
-
-        PREDICTION_PROBABILITIES.labels(outcome=outcome).observe(prob)
-        MODEL_PREDICTIONS_BY_OUTCOME.labels(
-            outcome=outcome,
-            predicted="true" if predicted else "false",
-        ).inc()
+    # Prediction distribution metrics — repression level
+    level = str(predictions.get("repression_level", "unknown"))
+    MODEL_PREDICTIONS_BY_OUTCOME.labels(outcome="repression_level", predicted=level).inc()
+    for lvl, prob in predictions.get("level_probabilities", {}).items():
+        PREDICTION_PROBABILITIES.labels(outcome=f"level_{lvl}").observe(prob)
 
 
 def record_prediction_error(country: str) -> None:

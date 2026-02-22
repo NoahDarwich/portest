@@ -48,15 +48,20 @@ FEATURE_COLUMNS = [
     "combined_sizes",
 ]
 
-TARGET_COLUMNS = [
-    "teargas",
-    "rubberbullets",
-    "liveammo",
-    "sticks",
-    "surround",
-    "cleararea",
-    "policerepress",
-]
+TARGET_COLUMNS = ["repression_level"]
+
+SEVERITY_MAP = {
+    "No known coercion, no security presence": 0,
+    "Security forces present at event": 1,
+    "Security forces or other repressive groups present at event": 1,
+    "Army present at event": 2,
+    "Participants summoned to security facility": 2,
+    "Physical harassment": 3,
+    "Arrests / detentions": 3,
+    "Party Militias/ Baltagia present at event": 3,
+    "Injuries inflicted": 4,
+    "Deaths inflicted": 5,
+}
 
 
 def load_data(data_path: Path) -> tuple[pd.DataFrame, pd.DataFrame]:
@@ -86,20 +91,21 @@ def load_data(data_path: Path) -> tuple[pd.DataFrame, pd.DataFrame]:
         median_size = df.loc[df["combined_sizes"] > 0, "combined_sizes"].median()
         df.loc[df["combined_sizes"] <= 0, "combined_sizes"] = median_size
 
+    # Map repression text to ordinal severity level 0–5
+    df["repression_level"] = df["repression"].map(SEVERITY_MAP)
+    df = df.dropna(subset=["repression_level"])
+    df["repression_level"] = df["repression_level"].astype(int)
+
     # Select features
     available_features = [c for c in FEATURE_COLUMNS if c in df.columns]
     X = df[available_features].copy()
 
-    # Select targets
-    available_targets = [c for c in TARGET_COLUMNS if c in df.columns]
-    y = df[available_targets].copy()
-
-    # Convert targets to binary
-    for col in y.columns:
-        y[col] = (y[col] > 0).astype(int)
+    # Single ordinal target
+    y = df["repression_level"].copy()
 
     logger.info(
-        f"Loaded {len(df)} samples with {len(available_features)} features and {len(available_targets)} targets"
+        f"Loaded {len(df)} samples with {len(available_features)} features, "
+        f"target distribution:\n{y.value_counts().sort_index()}"
     )
     return X, y
 
@@ -150,9 +156,10 @@ def train_model(
 
     logger.info(f"Training {model_type.value} model...")
 
+    target_cols = y.columns.tolist() if hasattr(y, "columns") else [str(y.name)]
     config = ModelConfig(
         model_type=model_type,
-        target_columns=y.columns.tolist(),
+        target_columns=target_cols,
         feature_columns=X.columns.tolist(),
     )
 
@@ -187,8 +194,9 @@ def train_ensemble(
     """
     logger.info("Training ensemble model...")
 
+    target_cols = y.columns.tolist() if hasattr(y, "columns") else [str(y.name)]
     config = ModelConfig(
-        target_columns=y.columns.tolist(),
+        target_columns=target_cols,
         feature_columns=X.columns.tolist(),
     )
 

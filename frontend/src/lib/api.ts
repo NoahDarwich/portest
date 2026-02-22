@@ -9,13 +9,10 @@ export interface PredictionInput {
   combined_sizes: number;
 }
 
-export interface OutcomePrediction {
-  probability: number;
-  prediction: boolean;
-}
-
 export interface PredictionResponse {
-  predictions: Record<string, OutcomePrediction>;
+  repression_level: number;
+  repression_label: string;
+  level_probabilities: Record<string, number>;
   model_id: string;
   model_version: string;
   cached: boolean;
