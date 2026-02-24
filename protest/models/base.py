@@ -41,9 +41,7 @@ class ModelConfig:
     hyperparameters: dict[str, Any] = field(default_factory=dict)
 
     # Target column for repression level classification (0–5)
-    target_columns: list[str] = field(
-        default_factory=lambda: ["repression_level"]
-    )
+    target_columns: list[str] = field(default_factory=lambda: ["repression_level"])
 
     # Feature columns
     feature_columns: list[str] = field(

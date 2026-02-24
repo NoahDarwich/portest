@@ -289,17 +289,15 @@ class ModelManager:
 
         # Get predictions — single multi-class target
         probs = self._model.predict_proba(df)  # list with 1 array of shape (1, 6)
-        preds = self._model.predict(df)        # shape (1, 1)
+        preds = self._model.predict(df)  # shape (1, 1)
 
-        level_probs = probs[0][0]              # array of 6 probabilities
+        level_probs = probs[0][0]  # array of 6 probabilities
         predicted_level = int(preds[0][0])
 
         results = {
             "repression_level": predicted_level,
             "repression_label": self.SEVERITY_LABELS.get(predicted_level, "Unknown"),
-            "level_probabilities": {
-                str(i): round(float(p), 4) for i, p in enumerate(level_probs)
-            },
+            "level_probabilities": {str(i): round(float(p), 4) for i, p in enumerate(level_probs)},
         }
         return results
 
@@ -827,20 +825,24 @@ async def get_map_data() -> list[dict[str, Any]]:
                 "tacticprimary",
             ],
         )
-        df["startdate"] = pd.to_datetime(df["startdate"], format="mixed", dayfirst=False, errors="coerce")
+        df["startdate"] = pd.to_datetime(
+            df["startdate"], format="mixed", dayfirst=False, errors="coerce"
+        )
         df = df.dropna(subset=["gpslatend", "gpslongend"])
 
         # Filter to only the 3 supported countries using per-country bounding boxes
         country_bounds = {
-            "Iraq":    (29.0, 37.5, 38.5, 48.8),
+            "Iraq": (29.0, 37.5, 38.5, 48.8),
             "Lebanon": (33.0, 34.7, 35.0, 36.7),
-            "Egypt":   (22.0, 31.7, 24.7, 37.1),
+            "Egypt": (22.0, 31.7, 24.7, 37.1),
         }
         df = df[df["country"].isin(country_bounds)]
 
         def in_bounds(row: pd.Series) -> bool:
             lat_min, lat_max, lng_min, lng_max = country_bounds[row["country"]]
-            return lat_min <= row["gpslatend"] <= lat_max and lng_min <= row["gpslongend"] <= lng_max
+            return (
+                lat_min <= row["gpslatend"] <= lat_max and lng_min <= row["gpslongend"] <= lng_max
+            )
 
         df = df[df.apply(in_bounds, axis=1)]
 
@@ -954,9 +956,9 @@ async def get_historical_kpis(
         rep = df["repression"]
         repressed = int((rep.notna() & (rep != _NO_COERCION)).sum())
         # Use numeric columns so counts match the displayed totals (killed/injured/arrested)
-        lethal   = int((df["killed"].fillna(0) > 0).sum())
+        lethal = int((df["killed"].fillna(0) > 0).sum())
         injuries = int((df["injured"].fillna(0) > 0).sum())
-        arrests  = int((df["arrested"].fillna(0) > 0).sum())
+        arrests = int((df["arrested"].fillna(0) > 0).sum())
 
         result: dict[str, Any] = {
             "total_events": total,
