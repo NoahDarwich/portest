@@ -763,6 +763,26 @@ async def get_options() -> dict[str, list[str]]:
 _map_data_cache: list[dict[str, Any]] | None = None
 _repression_stats_cache: dict[str, Any] | None = None
 
+# Historical analysis caches
+_historical_kpis_cache: dict[str, Any] | None = None
+_historical_trends_cache: dict[str, Any] | None = None
+_historical_cross_tab_cache: dict[str, Any] | None = None
+_historical_demands_cache: dict[str, Any] | None = None
+
+_REPRESSION_SHORT: dict[str, str] = {
+    "No known coercion, no security presence": "No coercion",
+    "Security forces or other repressive groups present at event": "Repressive groups",
+    "Injuries inflicted": "Injuries",
+    "Physical harassment": "Harassment",
+    "Security forces present at event": "Security present",
+    "Deaths inflicted": "Deaths",
+    "Army present at event": "Army present",
+    "Arrests / detentions": "Arrests",
+    "Party Militias/ Baltagia present at event": "Militias",
+    "Participants summoned to security facility": "Summoned",
+}
+_NO_COERCION = "No known coercion, no security presence"
+
 
 @app.get(
     "/mapdata",
@@ -901,6 +921,226 @@ async def get_repression_stats(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to load repression stats: {e}",
         )
+
+
+# ============================================================
+# Historical Analysis Endpoints
+# ============================================================
+
+
+@app.get(
+    "/historical/kpis",
+    tags=["Historical"],
+    summary="Get historical KPI statistics",
+)
+async def get_historical_kpis(
+    country: str | None = Query(None, description="Optional country filter"),
+) -> dict[str, Any]:
+    global _historical_kpis_cache
+    if country is None and _historical_kpis_cache is not None:
+        return _historical_kpis_cache
+
+    settings = get_settings()
+    data_path = settings.data_path / "full_df.csv"
+
+    try:
+        df = pd.read_csv(
+            data_path, usecols=["repression", "country", "killed", "injured", "arrested"]
+        )
+        if country:
+            df = df[df["country"] == country]
+
+        total = len(df)
+        rep = df["repression"]
+        repressed = int((rep.notna() & (rep != _NO_COERCION)).sum())
+        lethal = int((rep == "Deaths inflicted").sum())
+        injuries = int((rep == "Injuries inflicted").sum())
+        arrests = int((rep == "Arrests / detentions").sum())
+
+        result: dict[str, Any] = {
+            "total_events": total,
+            "total_killed": int(df["killed"].fillna(0).sum()),
+            "total_injured": int(df["injured"].fillna(0).sum()),
+            "total_arrested": int(df["arrested"].fillna(0).sum()),
+            "repressed_count": repressed,
+            "repressed_pct": round(repressed / total * 100, 1) if total > 0 else 0.0,
+            "lethal_pct": round(lethal / total * 100, 1) if total > 0 else 0.0,
+            "injury_pct": round(injuries / total * 100, 1) if total > 0 else 0.0,
+            "arrest_pct": round(arrests / total * 100, 1) if total > 0 else 0.0,
+        }
+
+        if country is None:
+            _historical_kpis_cache = result
+        return result
+
+    except Exception as e:
+        logger.error("Failed to load historical KPIs", error=str(e))
+        raise HTTPException(status_code=500, detail=f"Failed to load historical KPIs: {e}")
+
+
+@app.get(
+    "/historical/trends",
+    tags=["Historical"],
+    summary="Get monthly protest trends over time",
+)
+async def get_historical_trends(
+    country: str | None = Query(None, description="Optional country filter"),
+) -> dict[str, Any]:
+    global _historical_trends_cache
+    if country is None and _historical_trends_cache is not None:
+        return _historical_trends_cache
+
+    settings = get_settings()
+    data_path = settings.data_path / "full_df.csv"
+
+    try:
+        df = pd.read_csv(data_path, usecols=["startdate", "country"])
+        df["startdate"] = pd.to_datetime(
+            df["startdate"], format="mixed", dayfirst=False, errors="coerce"
+        )
+        df = df.dropna(subset=["startdate"])
+
+        if country:
+            df = df[df["country"] == country]
+
+        df["month_str"] = df["startdate"].dt.strftime("%Y-%m")
+
+        grouped = df.groupby(["month_str", "country"]).size().reset_index(name="count")
+        if grouped.empty:
+            return {"monthly": [], "countries": []}
+
+        pivoted = (
+            grouped.pivot(index="month_str", columns="country", values="count")
+            .fillna(0)
+            .sort_index()
+        )
+
+        monthly = []
+        for month, row in pivoted.iterrows():
+            entry: dict[str, Any] = {"month": month}
+            for c in ["Egypt", "Iraq", "Lebanon"]:
+                entry[c] = int(row.get(c, 0))
+            entry["total"] = sum(int(row.get(c, 0)) for c in ["Egypt", "Iraq", "Lebanon"])
+            monthly.append(entry)
+
+        result: dict[str, Any] = {
+            "monthly": monthly,
+            "countries": sorted(df["country"].unique().tolist()),
+        }
+        if country is None:
+            _historical_trends_cache = result
+        return result
+
+    except Exception as e:
+        logger.error("Failed to load historical trends", error=str(e))
+        raise HTTPException(status_code=500, detail=f"Failed to load historical trends: {e}")
+
+
+@app.get(
+    "/historical/cross-tab",
+    tags=["Historical"],
+    summary="Get tactic × repression cross-tabulation",
+)
+async def get_historical_cross_tab(
+    country: str | None = Query(None, description="Optional country filter"),
+) -> dict[str, Any]:
+    global _historical_cross_tab_cache
+    if country is None and _historical_cross_tab_cache is not None:
+        return _historical_cross_tab_cache
+
+    settings = get_settings()
+    data_path = settings.data_path / "full_df.csv"
+
+    try:
+        df = pd.read_csv(data_path, usecols=["tacticprimary", "repression", "country"])
+        df = df.dropna(subset=["tacticprimary", "repression"])
+
+        if country:
+            df = df[df["country"] == country]
+
+        top_tactics = df["tacticprimary"].value_counts().head(7).index.tolist()
+        df = df[df["tacticprimary"].isin(top_tactics)]
+
+        df = df.copy()
+        df["repression_short"] = df["repression"].map(_REPRESSION_SHORT).fillna(df["repression"])
+
+        ct = pd.crosstab(df["tacticprimary"], df["repression_short"], normalize="index") * 100
+
+        # Preserve label order from _REPRESSION_SHORT, keep only present ones
+        ordered_labels = list(_REPRESSION_SHORT.values())
+        present_labels = [lb for lb in ordered_labels if lb in ct.columns]
+
+        data = []
+        for tactic in top_tactics:
+            if tactic not in ct.index:
+                continue
+            row = ct.loc[tactic]
+            entry: dict[str, Any] = {
+                "tactic": tactic,
+                "total": int(df[df["tacticprimary"] == tactic].shape[0]),
+            }
+            for label in present_labels:
+                entry[label] = round(float(row.get(label, 0)), 1)
+            data.append(entry)
+
+        result: dict[str, Any] = {"data": data, "repression_labels": present_labels}
+        if country is None:
+            _historical_cross_tab_cache = result
+        return result
+
+    except Exception as e:
+        logger.error("Failed to load cross-tab", error=str(e))
+        raise HTTPException(status_code=500, detail=f"Failed to load cross-tab: {e}")
+
+
+@app.get(
+    "/historical/demands",
+    tags=["Historical"],
+    summary="Get demand type breakdown with repression rates",
+)
+async def get_historical_demands(
+    country: str | None = Query(None, description="Optional country filter"),
+) -> dict[str, Any]:
+    global _historical_demands_cache
+    if country is None and _historical_demands_cache is not None:
+        return _historical_demands_cache
+
+    settings = get_settings()
+    data_path = settings.data_path / "full_df.csv"
+
+    try:
+        df = pd.read_csv(data_path, usecols=["demandtypeone", "repression", "country"])
+        df = df.dropna(subset=["demandtypeone", "repression"])
+
+        if country:
+            df = df[df["country"] == country]
+
+        data = []
+        for demand, group in df.groupby("demandtypeone"):
+            total = len(group)
+            repressed = int((group["repression"] != _NO_COERCION).sum())
+            lethal = int((group["repression"] == "Deaths inflicted").sum())
+            data.append(
+                {
+                    "demand": demand,
+                    "total": total,
+                    "not_repressed": total - repressed,
+                    "repressed_count": repressed,
+                    "repressed_pct": round(repressed / total * 100, 1) if total > 0 else 0.0,
+                    "lethal_count": lethal,
+                    "lethal_pct": round(lethal / total * 100, 1) if total > 0 else 0.0,
+                }
+            )
+
+        data.sort(key=lambda x: x["total"], reverse=True)
+        result: dict[str, Any] = {"data": data}
+        if country is None:
+            _historical_demands_cache = result
+        return result
+
+    except Exception as e:
+        logger.error("Failed to load demands breakdown", error=str(e))
+        raise HTTPException(status_code=500, detail=f"Failed to load demands: {e}")
 
 
 # ============================================================

@@ -73,6 +73,46 @@ export interface RepressionStatsResponse {
   country_filter: string | null;
 }
 
+export interface HistoricalKPIsResponse {
+  total_events: number;
+  total_killed: number;
+  total_injured: number;
+  total_arrested: number;
+  repressed_count: number;
+  repressed_pct: number;
+  lethal_pct: number;
+  injury_pct: number;
+  arrest_pct: number;
+}
+
+export interface HistoricalTrendsResponse {
+  monthly: Array<{
+    month: string;
+    Iraq: number;
+    Lebanon: number;
+    Egypt: number;
+    total: number;
+  }>;
+  countries: string[];
+}
+
+export interface HistoricalCrossTabResponse {
+  data: Array<Record<string, string | number>>;
+  repression_labels: string[];
+}
+
+export interface HistoricalDemandsResponse {
+  data: Array<{
+    demand: string;
+    total: number;
+    not_repressed: number;
+    repressed_count: number;
+    repressed_pct: number;
+    lethal_count: number;
+    lethal_pct: number;
+  }>;
+}
+
 class ApiClient {
   private baseUrl: string;
 
@@ -137,6 +177,26 @@ class ApiClient {
   async getRepressionStats(country?: string): Promise<RepressionStatsResponse> {
     const params = country ? `?country=${encodeURIComponent(country)}` : "";
     return this.fetch<RepressionStatsResponse>(`/repression-stats${params}`);
+  }
+
+  async getHistoricalKPIs(country?: string): Promise<HistoricalKPIsResponse> {
+    const params = country ? `?country=${encodeURIComponent(country)}` : "";
+    return this.fetch<HistoricalKPIsResponse>(`/historical/kpis${params}`);
+  }
+
+  async getHistoricalTrends(country?: string): Promise<HistoricalTrendsResponse> {
+    const params = country ? `?country=${encodeURIComponent(country)}` : "";
+    return this.fetch<HistoricalTrendsResponse>(`/historical/trends${params}`);
+  }
+
+  async getHistoricalCrossTab(country?: string): Promise<HistoricalCrossTabResponse> {
+    const params = country ? `?country=${encodeURIComponent(country)}` : "";
+    return this.fetch<HistoricalCrossTabResponse>(`/historical/cross-tab${params}`);
+  }
+
+  async getHistoricalDemands(country?: string): Promise<HistoricalDemandsResponse> {
+    const params = country ? `?country=${encodeURIComponent(country)}` : "";
+    return this.fetch<HistoricalDemandsResponse>(`/historical/demands${params}`);
   }
 }
 
