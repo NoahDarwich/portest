@@ -953,9 +953,10 @@ async def get_historical_kpis(
         total = len(df)
         rep = df["repression"]
         repressed = int((rep.notna() & (rep != _NO_COERCION)).sum())
-        lethal = int((rep == "Deaths inflicted").sum())
-        injuries = int((rep == "Injuries inflicted").sum())
-        arrests = int((rep == "Arrests / detentions").sum())
+        # Use numeric columns so counts match the displayed totals (killed/injured/arrested)
+        lethal   = int((df["killed"].fillna(0) > 0).sum())
+        injuries = int((df["injured"].fillna(0) > 0).sum())
+        arrests  = int((df["arrested"].fillna(0) > 0).sum())
 
         result: dict[str, Any] = {
             "total_events": total,

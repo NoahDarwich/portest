@@ -10,15 +10,15 @@ export const METHOD_LABELS: Record<string, string> = {
 
 export const REPRESSION_SHORT_LABELS: Record<string, string> = {
   "No known coercion, no security presence": "No coercion",
-  "Security forces or other repressive groups present at event": "Repressive groups present",
+  "Security forces or other repressive groups present at event": "Repressive groups",
   "Injuries inflicted": "Injuries",
-  "Physical harassment": "Physical harassment",
+  "Physical harassment": "Harassment",
   "Security forces present at event": "Security present",
   "Deaths inflicted": "Deaths",
   "Army present at event": "Army present",
   "Arrests / detentions": "Arrests",
-  "Party Militias/ Baltagia present at event": "Militias present",
-  "Participants summoned to security facility": "Summoned to facility",
+  "Party Militias/ Baltagia present at event": "Militias",
+  "Participants summoned to security facility": "Summoned",
 };
 
 // Muted categorical colors for repression type view — softer against dark bg

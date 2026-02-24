@@ -32,9 +32,9 @@ export function HistoricalPanel() {
   const countryParam = country === "All" ? undefined : country;
 
   return (
-    <div className="flex flex-col">
+    <div className="flex flex-col h-full">
       {/* Fixed header — matches PredictionPanel */}
-      <div className="px-8 pt-6 pb-3">
+      <div className="flex-shrink-0 px-8 pt-6 pb-3">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h2 className="text-lg font-bold text-gray-200 tracking-tight">Historical Analysis</h2>
@@ -103,7 +103,7 @@ export function HistoricalPanel() {
 
       {/* Scrollable content — matches PredictionPanel */}
       <div
-        className="overflow-y-auto px-8 pb-6"
+        className="flex-1 min-h-0 overflow-y-auto px-8 pb-6"
         style={{ scrollbarWidth: "thin", scrollbarColor: "rgba(255,255,255,0.15) transparent" }}
       >
         <p className="text-xs text-gray-600 mb-5">

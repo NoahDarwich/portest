@@ -30,9 +30,21 @@ const TOOLTIP_STYLE = {
 
 function formatMonth(m: string): string {
   const [year, month] = m.split("-");
-  const names = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-  const label = names[parseInt(month) - 1] ?? month;
-  return `${label} '${year.slice(2)}`;
+  return `${year}-${month.padStart(2, "0")}`;
+}
+
+// Build a set of tick labels to show on the X-axis — only at year boundaries and period starts
+function buildTickSet(months: string[]): Set<string> {
+  const ticks = new Set<string>();
+  let lastYear = "";
+  for (const m of months) {
+    const year = m.split("-")[0];
+    if (year !== lastYear) {
+      ticks.add(formatMonth(m));
+      lastYear = year;
+    }
+  }
+  return ticks;
 }
 
 interface TrendChartProps {
@@ -65,16 +77,43 @@ export function TrendChart({ country }: TrendChartProps) {
   if (error) return <p className="text-xs text-red-400 py-2">Failed to load trends.</p>;
   if (!data || data.monthly.length === 0) return null;
 
-  const chartData = data.monthly.map((d) => ({ ...d, month: formatMonth(d.month) }));
+  // Detect if mixed time periods are shown (Egypt 2011-13 + Iraq/Lebanon 2019-20)
+  const hasMixedPeriods = data.monthly.some((m) => m.Egypt > 0) &&
+    data.monthly.some((m) => m.Iraq > 0 || m.Lebanon > 0);
 
   // Determine which countries have data in this view
   const activeCountries = (["Iraq", "Lebanon", "Egypt"] as const).filter((c) =>
     data.monthly.some((m) => m[c] > 0)
   );
 
-  // Detect if mixed time periods are shown
-  const hasMixedPeriods = data.monthly.some((m) => m.Egypt > 0) &&
-    data.monthly.some((m) => m.Iraq > 0 || m.Lebanon > 0);
+  // Build chart data, inserting a gap entry between the two periods when mixed
+  type ChartRow = { month: string; Egypt: number | null; Iraq: number | null; Lebanon: number | null };
+  let chartData: ChartRow[];
+  if (hasMixedPeriods) {
+    const lastEgyptIdx = data.monthly.reduce((acc, m, i) => (m.Egypt > 0 ? i : acc), -1);
+    const formatted = data.monthly.map((d) => ({
+      month: formatMonth(d.month),
+      Egypt: d.Egypt || null,
+      Iraq: d.Iraq || null,
+      Lebanon: d.Lebanon || null,
+    }));
+    chartData = [
+      ...formatted.slice(0, lastEgyptIdx + 1),
+      { month: "─ 6-yr gap ─", Egypt: null, Iraq: null, Lebanon: null },
+      ...formatted.slice(lastEgyptIdx + 1),
+    ];
+  } else {
+    chartData = data.monthly.map((d) => ({
+      month: formatMonth(d.month),
+      Egypt: d.Egypt || null,
+      Iraq: d.Iraq || null,
+      Lebanon: d.Lebanon || null,
+    }));
+  }
+
+  // Only tick at year boundaries to avoid crowding
+  const rawMonths = data.monthly.map((d) => d.month);
+  const tickSet = buildTickSet(rawMonths);
 
   return (
     <div>
@@ -109,6 +148,8 @@ export function TrendChart({ country }: TrendChartProps) {
               tickLine={false}
               stroke="#525252"
               tick={{ fill: "#737373" }}
+              tickFormatter={(v) => (tickSet.has(v) || v.includes("gap") ? v : "")}
+              interval={0}
             />
             <YAxis
               fontSize={10}
@@ -139,6 +180,7 @@ export function TrendChart({ country }: TrendChartProps) {
                 strokeWidth={2}
                 fill={`url(#grad-${c})`}
                 dot={false}
+                connectNulls={false}
                 activeDot={{ r: 4, fill: COUNTRY_COLORS[c] }}
               />
             ))}

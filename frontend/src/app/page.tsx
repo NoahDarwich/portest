@@ -98,7 +98,7 @@ export default function Home() {
             <div
               key="historical"
               className="curtain-panel absolute top-0 left-0 right-0 z-[1001] border-b border-white/[0.06] shadow-xl shadow-black/40"
-              style={{ background: "rgba(12, 13, 18, 0.96)", backdropFilter: "blur(24px)", maxHeight: "calc(100vh - 3.5rem)" }}
+              style={{ background: "rgba(12, 13, 18, 0.96)", backdropFilter: "blur(24px)", maxHeight: "calc(100vh - 3.5rem)", overflow: "hidden", display: "flex", flexDirection: "column" }}
             >
               <HistoricalPanel />
             </div>
