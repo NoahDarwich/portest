@@ -25,6 +25,8 @@ interface ProtestMapProps {
     repressionTypes: string[];
     demandTypes: string[];
     tactics: string[];
+    years: number[];
+    months: number[];
   }) => void;
 }
 
@@ -43,7 +45,9 @@ export function ProtestMap({ filters, onAvailableFiltersReady }: ProtestMapProps
         const repressionTypes = [...new Set(data.map((p) => p.repression).filter(Boolean))];
         const demandTypes = [...new Set(data.map((p) => p.demand).filter(Boolean))].sort();
         const tactics = [...new Set(data.map((p) => p.tactic).filter(Boolean))].sort();
-        onAvailableFiltersReady?.({ repressionTypes, demandTypes, tactics });
+        const years = [...new Set(data.map((p) => p.year).filter((y): y is number => y !== null))].sort();
+        const months = [...new Set(data.map((p) => p.month).filter((m): m is number => m !== null))].sort((a, b) => a - b);
+        onAvailableFiltersReady?.({ repressionTypes, demandTypes, tactics, years, months });
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to load map data");
       } finally {
@@ -56,6 +60,8 @@ export function ProtestMap({ filters, onAvailableFiltersReady }: ProtestMapProps
 
   const filteredPoints = useMemo(() => {
     return points.filter((p) => {
+      if (filters.years.length > 0 && (p.year === null || !filters.years.includes(p.year))) return false;
+      if (filters.months.length > 0 && (p.month === null || !filters.months.includes(p.month))) return false;
       if (filters.countries.length > 0 && !filters.countries.includes(p.country)) return false;
       if (filters.repressionTypes.length > 0 && !filters.repressionTypes.includes(p.repression)) return false;
       if (filters.demandTypes.length > 0 && !filters.demandTypes.includes(p.demand)) return false;

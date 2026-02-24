@@ -47,6 +47,8 @@ export default function Home() {
   const [availableRepressionTypes, setAvailableRepressionTypes] = useState<string[]>([]);
   const [availableDemandTypes, setAvailableDemandTypes] = useState<string[]>([]);
   const [availableTactics, setAvailableTactics] = useState<string[]>([]);
+  const [availableYears, setAvailableYears] = useState<number[]>([]);
+  const [availableMonths, setAvailableMonths] = useState<number[]>([]);
 
   const selectedCountry = filters.countries.length === 1 ? filters.countries[0] : null;
 
@@ -80,10 +82,12 @@ export default function Home() {
   };
 
   const handleAvailableFilters = useCallback(
-    (data: { repressionTypes: string[]; demandTypes: string[]; tactics: string[] }) => {
+    (data: { repressionTypes: string[]; demandTypes: string[]; tactics: string[]; years: number[]; months: number[] }) => {
       setAvailableRepressionTypes(data.repressionTypes);
       setAvailableDemandTypes(data.demandTypes);
       setAvailableTactics(data.tactics);
+      setAvailableYears(data.years);
+      setAvailableMonths(data.months);
     },
     []
   );
@@ -188,6 +192,8 @@ export default function Home() {
           availableRepressionTypes={availableRepressionTypes}
           availableDemandTypes={availableDemandTypes}
           availableTactics={availableTactics}
+          availableYears={availableYears}
+          availableMonths={availableMonths}
         />
       </div>
     </div>

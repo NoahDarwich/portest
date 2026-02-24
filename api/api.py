@@ -797,6 +797,7 @@ async def get_map_data() -> list[dict[str, Any]]:
         df = pd.read_csv(
             data_path,
             usecols=[
+                "startdate",
                 "gpslatend",
                 "gpslongend",
                 "repression",
@@ -806,6 +807,7 @@ async def get_map_data() -> list[dict[str, Any]]:
                 "tacticprimary",
             ],
         )
+        df["startdate"] = pd.to_datetime(df["startdate"], format="mixed", dayfirst=False, errors="coerce")
         df = df.dropna(subset=["gpslatend", "gpslongend"])
 
         # Filter to only the 3 supported countries using per-country bounding boxes
@@ -837,6 +839,8 @@ async def get_map_data() -> list[dict[str, Any]]:
                     "demand": str(row["demandtypeone"]) if pd.notna(row["demandtypeone"]) else "",
                     "tactic": str(row["tacticprimary"]) if pd.notna(row["tacticprimary"]) else "",
                     "severity": severity_map.get(repression, 0),
+                    "year": int(row["startdate"].year) if pd.notna(row["startdate"]) else None,
+                    "month": int(row["startdate"].month) if pd.notna(row["startdate"]) else None,
                 }
             )
 

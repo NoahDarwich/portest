@@ -1,6 +1,8 @@
 export type ColorMode = "type" | "severity";
 
 export interface MapFilters {
+  years: number[];
+  months: number[];
   countries: string[];
   repressionTypes: string[];
   demandTypes: string[];
@@ -9,6 +11,8 @@ export interface MapFilters {
 }
 
 export const DEFAULT_FILTERS: MapFilters = {
+  years: [],
+  months: [],
   countries: [],
   repressionTypes: [],
   demandTypes: [],

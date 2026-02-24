@@ -57,6 +57,21 @@ export const SEVERITY_LABELS: Record<number, string> = {
 
 export const COUNTRIES = ["Iraq", "Lebanon", "Egypt"] as const;
 
+export const MONTH_LABELS: Record<number, string> = {
+  1: "Jan", 2: "Feb", 3: "Mar", 4: "Apr",
+  5: "May", 6: "Jun", 7: "Jul", 8: "Aug",
+  9: "Sep", 10: "Oct", 11: "Nov", 12: "Dec",
+};
+
+// Countries active per year — helps contextualise the year filter
+export const YEAR_COUNTRY_HINT: Record<number, string> = {
+  2011: "Egypt",
+  2012: "Egypt",
+  2013: "Egypt",
+  2019: "Iraq · Lebanon",
+  2020: "Iraq · Lebanon",
+};
+
 export function getBarColor(probability: number): string {
   if (probability >= 0.7) return "#a35555";
   if (probability >= 0.5) return "#c97b7b";

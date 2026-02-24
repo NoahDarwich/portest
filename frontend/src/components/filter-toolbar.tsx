@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { MapFilters, ColorMode } from "@/lib/types";
-import { COUNTRIES, REPRESSION_SHORT_LABELS, SEVERITY_LABELS, SEVERITY_COLORS } from "@/lib/constants";
+import { COUNTRIES, REPRESSION_SHORT_LABELS, SEVERITY_LABELS, SEVERITY_COLORS, MONTH_LABELS, YEAR_COUNTRY_HINT } from "@/lib/constants";
 import { Filter, X, ChevronDown, ChevronUp } from "lucide-react";
 
 interface FilterSidebarProps {
@@ -11,6 +11,8 @@ interface FilterSidebarProps {
   availableRepressionTypes: string[];
   availableDemandTypes: string[];
   availableTactics: string[];
+  availableYears: number[];
+  availableMonths: number[];
 }
 
 /** Collapsible section with checkbox list */
@@ -93,11 +95,18 @@ export function FilterSidebar({
   availableRepressionTypes,
   availableDemandTypes,
   availableTactics,
+  availableYears,
+  availableMonths,
 }: FilterSidebarProps) {
   const toggleInArray = (arr: string[], value: string) =>
     arr.includes(value) ? arr.filter((v) => v !== value) : [...arr, value];
 
+  const toggleInNumArray = (arr: number[], value: number) =>
+    arr.includes(value) ? arr.filter((v) => v !== value) : [...arr, value];
+
   const activeCount =
+    filters.years.length +
+    filters.months.length +
     filters.countries.length +
     filters.repressionTypes.length +
     filters.demandTypes.length +
@@ -106,6 +115,8 @@ export function FilterSidebar({
   const clearFilters = () => {
     onFilterChange({
       ...filters,
+      years: [],
+      months: [],
       countries: [],
       repressionTypes: [],
       demandTypes: [],
@@ -140,6 +151,62 @@ export function FilterSidebar({
         className="flex-1 overflow-y-auto px-5 py-4"
         style={{ scrollbarWidth: "thin", scrollbarColor: "rgba(255,255,255,0.1) transparent" }}
       >
+        {/* Year filter */}
+        {availableYears.length > 0 && (
+          <div className="mb-5">
+            <div className="text-sm font-semibold text-gray-300 mb-1">Year</div>
+            <p className="text-[11px] text-gray-600 mb-2.5">Default: all years shown</p>
+            <div className="flex flex-col gap-1.5">
+              {availableYears.map((y) => {
+                const active = filters.years.includes(y);
+                return (
+                  <button
+                    key={y}
+                    onClick={() => onFilterChange({ ...filters, years: toggleInNumArray(filters.years, y), months: [] })}
+                    className={`flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
+                      active
+                        ? "bg-blue-500/15 text-blue-400 border border-blue-500/30 shadow-sm shadow-blue-500/10"
+                        : "bg-white/[0.04] text-gray-400 border border-white/[0.08] hover:bg-white/[0.08] hover:text-gray-300"
+                    }`}
+                  >
+                    <span>{y}</span>
+                    {YEAR_COUNTRY_HINT[y] && (
+                      <span className={`text-[10px] ${active ? "text-blue-400/70" : "text-gray-600"}`}>
+                        {YEAR_COUNTRY_HINT[y]}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Month filter — only shown when years are selected */}
+        {filters.years.length > 0 && availableMonths.length > 0 && (
+          <div className="mb-5">
+            <div className="text-sm font-semibold text-gray-300 mb-2.5">Month</div>
+            <div className="grid grid-cols-4 gap-1.5">
+              {availableMonths.map((m) => {
+                const active = filters.months.includes(m);
+                return (
+                  <button
+                    key={m}
+                    onClick={() => onFilterChange({ ...filters, months: toggleInNumArray(filters.months, m) })}
+                    className={`px-2 py-2 rounded-md text-xs font-medium text-center transition-all ${
+                      active
+                        ? "bg-blue-500/15 text-blue-400 border border-blue-500/30"
+                        : "bg-white/[0.04] text-gray-500 border border-white/[0.08] hover:bg-white/[0.08] hover:text-gray-300"
+                    }`}
+                  >
+                    {MONTH_LABELS[m]}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         {/* Country — always visible as large buttons */}
         <div className="mb-5">
           <div className="text-sm font-semibold text-gray-300 mb-3">Country</div>

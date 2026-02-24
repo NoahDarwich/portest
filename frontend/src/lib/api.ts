@@ -63,6 +63,8 @@ export interface MapDataPoint {
   demand: string;
   tactic: string;
   severity: number;
+  year: number | null;
+  month: number | null;
 }
 
 export interface RepressionStatsResponse {
