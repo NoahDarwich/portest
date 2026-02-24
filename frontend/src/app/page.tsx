@@ -6,7 +6,7 @@ import { FilterSidebar } from "@/components/filter-toolbar";
 import { PredictionPanel } from "@/components/prediction-panel";
 import { api, PredictionInput, PredictionResponse, HealthResponse } from "@/lib/api";
 import { MapFilters, DEFAULT_FILTERS } from "@/lib/types";
-import { AlertTriangle, CheckCircle, HelpCircle, Brain } from "lucide-react";
+import { AlertTriangle, CheckCircle, HelpCircle, Brain, ExternalLink } from "lucide-react";
 import Link from "next/link";
 
 type PanelTab = "predict" | "historical" | null;
@@ -196,6 +196,41 @@ export default function Home() {
           availableMonths={availableMonths}
         />
       </div>
+
+      {/* Footer */}
+      <footer className="flex-shrink-0 flex items-center justify-between px-10 py-3 border-t border-white/[0.06] bg-[#0c0d12]">
+        {/* Left: copyright */}
+        <p className="text-sm text-gray-600">
+          © {new Date().getFullYear()} Pro-Test
+        </p>
+
+        {/* Center: tagline */}
+        <p className="hidden md:block text-sm text-gray-600 italic">
+          Predictive Modelling for a Safer Forum of Dissent
+        </p>
+
+        {/* Right: author + GitHub */}
+        <div className="flex items-center gap-4">
+          <a
+            href="https://github.com/NoahDarwich/portest"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-sm text-gray-500 hover:text-gray-300 transition-colors"
+          >
+            GitHub
+          </a>
+          <div className="w-px h-4 bg-white/10" />
+          <a
+            href="https://www.noahdarwich.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1.5 text-sm font-medium text-gray-300 hover:text-white transition-colors"
+          >
+            Noah Darwich
+            <ExternalLink className="h-3.5 w-3.5" />
+          </a>
+        </div>
+      </footer>
     </div>
   );
 }

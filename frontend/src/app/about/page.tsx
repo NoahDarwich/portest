@@ -203,9 +203,19 @@ export default function AboutPage() {
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-gray-600">
             <p>Pro-Test v2.0 - Predictive Modelling for a Safer Forum of Dissent</p>
-            <Link href="/" className="text-gray-500 hover:text-gray-300">
-              Back to Map
-            </Link>
+            <div className="flex items-center gap-4">
+              <a
+                href="https://www.noahdarwich.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-gray-500 hover:text-gray-300 transition-colors"
+              >
+                Built by Noah Darwich
+              </a>
+              <Link href="/" className="text-gray-500 hover:text-gray-300">
+                Back to Map
+              </Link>
+            </div>
           </div>
         </div>
       </footer>
