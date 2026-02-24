@@ -102,8 +102,9 @@ export function RepressionChart({ country }: RepressionChartProps) {
               contentStyle={TOOLTIP_STYLE}
               itemStyle={{ color: "#e4e4e7" }}
               labelStyle={{ color: "#a1a1aa" }}
+              cursor={{ fill: "rgba(255,255,255,0.04)" }}
             />
-            <Bar dataKey="pct" radius={[0, 4, 4, 0]}>
+            <Bar dataKey="pct" radius={[0, 4, 4, 0]} activeBar={false}>
               <LabelList
                 dataKey="pct"
                 position="right"

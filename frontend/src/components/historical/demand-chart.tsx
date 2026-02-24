@@ -102,6 +102,7 @@ export function DemandChart({ country }: DemandChartProps) {
               tick={{ fill: "#a1a1aa" }}
             />
             <Tooltip
+              cursor={{ fill: "rgba(255,255,255,0.04)" }}
               content={({ active, payload }) => {
                 if (!active || !payload?.length) return null;
                 const d = payload[0].payload;
@@ -123,7 +124,7 @@ export function DemandChart({ country }: DemandChartProps) {
                 );
               }}
             />
-            <Bar dataKey="total" radius={[0, 4, 4, 0]}>
+            <Bar dataKey="total" radius={[0, 4, 4, 0]} activeBar={false}>
               <LabelList
                 dataKey="repressed_pct"
                 position="right"

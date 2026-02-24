@@ -116,6 +116,7 @@ export function CrossTabChart({ country }: CrossTabChartProps) {
               contentStyle={TOOLTIP_STYLE}
               itemStyle={{ color: "#e4e4e7" }}
               labelStyle={{ color: "#a1a1aa", fontWeight: 600 }}
+              cursor={{ fill: "rgba(255,255,255,0.04)" }}
             />
             <Legend
               wrapperStyle={{ fontSize: 10, color: "#6b7280", paddingTop: 8 }}
@@ -133,6 +134,7 @@ export function CrossTabChart({ country }: CrossTabChartProps) {
                 radius={
                   index === barKeys.length - 1 ? [0, 4, 4, 0] : [0, 0, 0, 0]
                 }
+                activeBar={false}
               />
             ))}
           </BarChart>

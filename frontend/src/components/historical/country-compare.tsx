@@ -137,6 +137,7 @@ export function CountryCompare() {
               contentStyle={TOOLTIP_STYLE}
               itemStyle={{ color: "#e4e4e7" }}
               labelStyle={{ color: "#a1a1aa", fontWeight: 600 }}
+              cursor={{ fill: "rgba(255,255,255,0.04)" }}
             />
             <Legend
               wrapperStyle={{ fontSize: 11, paddingTop: 8 }}
@@ -153,6 +154,7 @@ export function CountryCompare() {
                 fill={COUNTRY_COLORS[c]}
                 radius={[3, 3, 0, 0]}
                 opacity={0.85}
+                activeBar={false}
               />
             ))}
           </BarChart>
