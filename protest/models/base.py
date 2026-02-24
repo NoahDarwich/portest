@@ -5,7 +5,7 @@ Base model classes and configuration for Pro-Test ML models.
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from datetime import datetime
-from enum import Enum
+from enum import StrEnum
 from pathlib import Path
 from typing import Any
 
@@ -15,7 +15,7 @@ import pandas as pd
 from numpy.typing import NDArray
 
 
-class ModelType(str, Enum):
+class ModelType(StrEnum):
     """Supported model types."""
 
     RANDOM_FOREST = "random_forest"
